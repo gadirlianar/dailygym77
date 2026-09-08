@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="az">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexBio 3D: Biomexaniki Məşq və Hipertrofiya Sistemi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Glassmorphism & Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0b1120;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #22324e;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card-accent {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.4);
+        }
+
+        .glow-orange {
+            box-shadow: 0 0 20px -5px rgba(249, 115, 22, 0.4);
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        canvas {
+            outline: none;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
+
+    <!-- TOP APP NAVIGATION BAR -->
+    <header
+        class="sticky top-0 z-50 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div
+                class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-extrabold text-lg lg:text-xl tracking-tight text-white">APEX<span
+                            class="text-cyan-400">BIO</span> 3D</h1>
+                    <span
+                        class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/50">Scientific
+                        Lab</span>
+                </div>
+                <p class="text-xs text-slate-400">Biomechanics & 4-Day Full Body Neuromuscular Engine</p>
+            </div>
+        </div>
+
+        <!-- MAIN APP TABS -->
+        <nav
+            class="flex items-center space-x-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs sm:text-sm font-medium">
+            <button onclick="switchMainTab('simulator')" id="tab-btn-simulator"
+                class="px-3.5 py-2 rounded-lg transition-all flex items-center space-x-2 bg-cyan-500 text-slate-950 font-bold shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+                </svg>
+                <span>3D Trenažor & Modeli</span>
+            </button>
+            <button onclick="switchMainTab('calendar')" id="tab-btn-calendar"
+                class="px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Həftəlik Plan</span>
+            </button>
+            <button onclick="switchMainTab('audit')" id="tab-btn-audit"
+                class="px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Elmi Audit & Miflər</span>
+            </button>
+            <button onclick="switchMainTab('tracker')" id="tab-btn-tracker"
+                class="px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Canlı Məşq Logeri</span>
+            </button>
+        </nav>
+
+        <!-- USER BIO BADGE -->
+        <div class="hidden xl:flex items-center space-x-3 text-xs border-l border-slate-800 pl-4">
+            <div class="text-right">
+                <p class="font-bold text-slate-200">ANAR QƏDİRLİ</p>
+                <p class="text-emerald-400 flex items-center justify-end gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Check-Up: Orqanlar Təmiz
+                </p>
+            </div>
+            <div
+                class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400">
+                AQ
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WRAPPER -->
+    <main class="flex-1 w-full max-w-[1700px] mx-auto p-3 lg:p-6">
+
+        <!-- ============================================================= -->
+        <!-- TAB 1: 3D BIOMECHANICS SIMULATOR & INTERACTIVE CONTROLS      -->
+        <!-- ============================================================= -->
+        <div id="tab-content-simulator" class="space-y-6">
+
+            <!-- Top Bar: Day & Exercise Selectors -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <!-- Day Select -->
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <label class="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-1">Məşq Günü</label>
+                    <div class="grid grid-cols-4 gap-1.5" id="day-buttons-container">
+                        <!-- Rendered in JS -->
+                    </div>
+                </div>
+
+                <!-- Exercise Quick Pick -->
+                <div class="md:col-span-2 glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[11px] font-bold tracking-wider uppercase text-slate-400">Aktiv Hərəkət
+                            Seçimi</label>
+                        <span id="current-day-tag" class="text-xs text-cyan-400 font-semibold">Gün 1: İtələmə & Ön
+                            Zəncir</span>
+                    </div>
+                    <select id="exercise-select" onchange="onExerciseSelectChange(this.value)"
+                        class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-cyan-400 focus:outline-none">
+                        <!-- Populated in JS -->
+                    </select>
+                </div>
+
+                <!-- Correct vs Incorrect Form Toggle -->
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <label class="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-1">Biomexaniki
+                        Texnika Rejimi</label>
+                    <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-xl border border-slate-800">
+                        <button id="mode-correct-btn" onclick="setFormMode(true)"
+                            class="py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 bg-emerald-500 text-slate-950 shadow">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Düzgün Forma</span>
+                        </button>
+                        <button id="mode-mistake-btn" onclick="setFormMode(false)"
+                            class="py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-red-400 transition-all flex items-center justify-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>Kritik Səhvlər</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN 3D WORKSPACE GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- LEFT: 3D VIEWPORT & PLAYBACK CONTROLS (8 Cols) -->
+                <div class="lg:col-span-8 flex flex-col gap-4">
+                    <div
+                        class="relative w-full h-[520px] lg:h-[640px] rounded-3xl overflow-hidden glass-card border border-slate-800 bg-gradient-to-b from-[#0e1626] to-[#080d18] shadow-2xl">
+
+                        <!-- 3D Canvas Container -->
+                        <div id="threejs-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+                        <!-- Top Overlay: Real-Time Movement Info -->
+                        <div class="absolute top-4 left-4 right-4 flex items-start justify-between pointer-events-none">
+                            <div class="glass-card px-4 py-2.5 rounded-2xl pointer-events-auto border-l-4"
+                                id="form-indicator-badge" style="border-left-color: #10b981;">
+                                <div class="flex items-center space-x-2">
+                                    <span id="form-mode-title"
+                                        class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">DÜZGÜN
+                                        BİOMEXANİKA</span>
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                </div>
+                                <h3 id="current-exercise-title"
+                                    class="text-base lg:text-lg font-black text-white mt-0.5">Dumbbell Goblet Squat</h3>
+                                <p id="current-exercise-tempo" class="text-[11px] font-mono text-cyan-300">Tempo:
+                                    3-1-1-0 (3s Eksentrik | 1s Zirvə gərginlik)</p>
+                            </div>
+
+                            <!-- View Presets Bar (Floating) -->
+                            <div
+                                class="glass-card p-1 rounded-2xl flex flex-wrap gap-1 pointer-events-auto max-w-[320px] justify-end">
+                                <button onclick="setCameraView('front')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">Ön</button>
+                                <button onclick="setCameraView('back')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">Arxa</button>
+                                <button onclick="setCameraView('side')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">Profil</button>
+                                <button onclick="setCameraView('front45')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">45°
+                                    Ön</button>
+                                <button onclick="setCameraView('back45')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">45°
+                                    Arxa</button>
+                                <button onclick="setCameraView('top')"
+                                    class="px-2 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">Üstdən</button>
+                                <button onclick="toggleAutoRotate()" id="btn-autorotate"
+                                    class="px-2.5 py-1 text-[11px] rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/60 font-semibold">360°
+                                    Fırlat</button>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Overlay: Rep Progress Phase & Biomechanical Alert -->
+                        <div class="absolute bottom-4 left-4 right-4 pointer-events-none flex flex-col gap-2">
+
+                            <!-- Warning Banner in Mistake Mode -->
+                            <div id="mistake-warning-box"
+                                class="hidden glass-card p-3 rounded-2xl border-l-4 border-red-500 pointer-events-auto bg-red-950/40 text-red-200 text-xs animate-bounce">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span class="font-bold text-red-400" id="mistake-title">Xəbərdarlıq: Dizlərin daxilə
+                                        çökməsi (Valgus)</span>
+                                </div>
+                                <p class="mt-1 text-slate-300" id="mistake-desc">Diz qapaqları ayaq barmaqları oxundan
+                                    daxilə bükülür, menisk və ön çarpaz bağlara dağıdıcı yüklənmə verir.</p>
+                            </div>
+
+                            <!-- Phase & Trajectory Bar -->
+                            <div
+                                class="glass-card px-4 py-3 rounded-2xl pointer-events-auto flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="text-xs font-bold text-slate-400">FAZA:</div>
+                                    <div id="motion-phase-badge"
+                                        class="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                                        Eksentrik (Enmə)
+                                    </div>
+                                </div>
+
+                                <!-- Trajectory Toggle & Reset -->
+                                <div class="flex items-center space-x-3 text-xs">
+                                    <label class="flex items-center space-x-2 cursor-pointer text-slate-300">
+                                        <input type="checkbox" id="show-trajectory-cb" checked
+                                            onchange="toggleTrajectory(this.checked)"
+                                            class="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0">
+                                        <span>3D Trayektoriya Xətti</span>
+                                    </label>
+                                    <button onclick="resetCamera()"
+                                        class="text-slate-400 hover:text-white underline">Kameranı sıfırla</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ANIMATION TIMELINE & CONTROLS BAR -->
+                    <div
+                        class="glass-card p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
+
+                        <!-- Left: Play/Pause, Replay & Scrub -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-start">
+                            <button onclick="togglePlayPause()" id="btn-play-pause"
+                                class="w-11 h-11 rounded-2xl bg-cyan-500 text-slate-950 flex items-center justify-center font-bold shadow-lg shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all">
+                                <svg id="icon-pause" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <svg id="icon-play" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="restartAnimation()" title="Əvvələ qaytar"
+                                class="w-10 h-10 rounded-2xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+
+                            <!-- Timeline Scrubber -->
+                            <div class="flex-1 min-w-[120px] max-w-[200px] mx-2">
+                                <input type="range" id="anim-scrubber" min="0" max="1" step="0.001" value="0"
+                                    oninput="onScrub(this.value)"
+                                    class="w-full accent-cyan-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Right: Speed Presets -->
+                        <div
+                            class="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800">
+                            <span class="text-[10px] text-slate-500 font-bold px-2">SÜRƏT:</span>
+                            <button onclick="setAnimSpeed(0.25)" id="speed-025"
+                                class="speed-btn px-2.5 py-1 text-xs rounded-xl font-bold text-slate-400 hover:text-white">0.25x</button>
+                            <button onclick="setAnimSpeed(0.5)" id="speed-05"
+                                class="speed-btn px-2.5 py-1 text-xs rounded-xl font-bold text-slate-400 hover:text-white">0.5x</button>
+                            <button onclick="setAnimSpeed(1.0)" id="speed-10"
+                                class="speed-btn px-2.5 py-1 text-xs rounded-xl font-bold bg-cyan-500 text-slate-950 shadow">1.0x</button>
+                            <button onclick="setAnimSpeed(1.5)" id="speed-15"
+                                class="speed-btn px-2.5 py-1 text-xs rounded-xl font-bold text-slate-400 hover:text-white">1.5x</button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT: ANATOMICAL HEAT-MAP & BIOMECHANICAL CUES (4 Cols) -->
+                <div class="lg:col-span-4 flex flex-col gap-4">
+
+                    <!-- Muscle Activation Heat-Map Card -->
+                    <div class="glass-card p-5 rounded-3xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4
+                                class="font-extrabold text-sm uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                Əzələ Aktivasiyası (Heat-Map)
+                            </h4>
+                            <span
+                                class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300">EMG
+                                Simulyasiya</span>
+                        </div>
+
+                        <!-- Color Coded Legend -->
+                        <div class="space-y-3 pt-1">
+                            <!-- Primary -->
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="flex items-center gap-1.5 text-orange-400">
+                                        <span class="w-3 h-3 rounded-full bg-[#ff4500] shadow-[0_0_8px_#ff4500]"></span>
+                                        ƏSAS HƏDƏF (Primary)
+                                    </span>
+                                    <span id="primary-muscle-percent" class="font-mono text-orange-400">95%
+                                        Aktivlik</span>
+                                </div>
+                                <p id="primary-muscles-text"
+                                    class="text-sm font-bold text-white bg-slate-900/80 p-2.5 rounded-xl border border-orange-500/20">
+                                    Quadriceps (Dördbaslı), Gluteus Maximus (Böyük Yan)
+                                </p>
+                            </div>
+
+                            <!-- Secondary -->
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="flex items-center gap-1.5 text-amber-300">
+                                        <span class="w-3 h-3 rounded-full bg-[#eab308] shadow-[0_0_8px_#eab308]"></span>
+                                        KÖMƏKÇİ (Secondary)
+                                    </span>
+                                    <span id="secondary-muscle-percent" class="font-mono text-amber-300">65%
+                                        Aktivlik</span>
+                                </div>
+                                <p id="secondary-muscles-text"
+                                    class="text-sm font-medium text-slate-200 bg-slate-900/80 p-2.5 rounded-xl border border-amber-500/20">
+                                    Hamstrings, Adductors (Yaxınlaşdırıcılar)
+                                </p>
+                            </div>
+
+                            <!-- Stabilizers -->
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="flex items-center gap-1.5 text-cyan-400">
+                                        <span class="w-3 h-3 rounded-full bg-[#06b6d4] shadow-[0_0_8px_#06b6d4]"></span>
+                                        STABİLİZATORLAR (Core & Joints)
+                                    </span>
+                                    <span id="stabilizer-muscle-percent" class="font-mono text-cyan-400">50%
+                                        İzometrik</span>
+                                </div>
+                                <p id="stabilizer-muscles-text"
+                                    class="text-xs text-slate-300 bg-slate-900/80 p-2.5 rounded-xl border border-cyan-500/20">
+                                    Erector Spinae, Transversus Abdominis, Deltoid ön başı
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Biomechanical Execution Checklist -->
+                    <div class="glass-card p-5 rounded-3xl space-y-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4
+                                class="font-extrabold text-sm uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                Biomexaniki İcra Qaydaları
+                            </h4>
+                            <ul id="biomechanics-cues-list" class="space-y-2 text-xs text-slate-300">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </div>
+
+                        <!-- Hypertrophy Prescription -->
+                        <div
+                            class="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-800/40 text-xs">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-cyan-300">Hipertrofiya Həcmi:</span>
+                                <span id="exercise-sets-reps"
+                                    class="font-mono font-bold text-white bg-cyan-900/60 px-2 py-0.5 rounded">3 Set x
+                                    10–12 təkrar</span>
+                            </div>
+                            <p id="exercise-rir-info" class="text-slate-400 text-[11px]">Hədəf RIR: 1-2 (Tükənməyə 1-2
+                                keyfiyyətli təkrar qalmış dayandırın).</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- TAB 2: WEEKLY 3D TRAINING CALENDAR & MINUTE-BY-MINUTE MAP     -->
+        <!-- ============================================================= -->
+        <div id="tab-content-calendar" class="hidden space-y-6">
+
+            <!-- Intro Banner -->
+            <div class="glass-card p-6 rounded-3xl border-l-4 border-cyan-400">
+                <h2 class="text-xl lg:text-2xl font-black text-white">4 Günlük Neyromuskulyar Full-Body Sistemi</h2>
+                <p class="text-sm text-slate-300 mt-1 max-w-4xl">
+                    Bu qrafik ardıcıl 2 gün məşq (B.E - Ç.A) və 2 gün məşq (C.A - Cümə) bloklarını mərkəzi sinir
+                    sistemini (CNS) tükəndirmədən, müxtəlif hərəkət bucaqları və əzələ lifi istiqamətləri ilə
+                    balanslaşdırır.
+                </p>
+            </div>
+
+            <!-- 7-Day Visual Map -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                <!-- Day 1 Card -->
+                <div
+                    class="glass-card p-5 rounded-3xl border-t-4 border-cyan-400 hover:border-cyan-300 transition space-y-4">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-black uppercase tracking-wider text-cyan-400">Bazar Ertəsi</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300">45-50
+                            Dəq</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">GÜN 1: İtələmə & Ön Zəncir</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Kvadriseps, Sinə və Ön Çiyin dominantlığı</p>
+                    </div>
+                    <div class="space-y-2 text-xs border-t border-slate-800 pt-3">
+                        <div class="flex justify-between text-slate-300"><span>1. Goblet Squat</span><span
+                                class="font-mono text-cyan-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>2. Station Chest Press</span><span
+                                class="font-mono text-cyan-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>3. Wide Lat Pulldown</span><span
+                                class="font-mono text-cyan-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>4. DB Shoulder Press</span><span
+                                class="font-mono text-cyan-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>5. Cable Triceps Pushdown</span><span
+                                class="font-mono text-cyan-400">3x 12-15</span></div>
+                    </div>
+                    <button onclick="loadExerciseFromCard('goblet_squat')"
+                        class="w-full py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/30 transition">
+                        3D İcraya Bax
+                    </button>
+                </div>
+
+                <!-- Day 2 Card -->
+                <div
+                    class="glass-card p-5 rounded-3xl border-t-4 border-blue-500 hover:border-blue-400 transition space-y-4">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-black uppercase tracking-wider text-blue-400">Çərşənbə Axşamı</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300">45-50
+                            Dəq</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">GÜN 2: Çəkmə & Arxa Zəncir</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Hamstring, Kürək qalınlığı və Yan Çiyin</p>
+                    </div>
+                    <div class="space-y-2 text-xs border-t border-slate-800 pt-3">
+                        <div class="flex justify-between text-slate-300"><span>1. DB Romanian Deadlift</span><span
+                                class="font-mono text-blue-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>2. Seated Cable Row</span><span
+                                class="font-mono text-blue-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>3. DB Floor Press</span><span
+                                class="font-mono text-blue-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>4. DB Lateral Raise</span><span
+                                class="font-mono text-blue-400">3x 12-15</span></div>
+                        <div class="flex justify-between text-slate-300"><span>5. DB Biceps Curl</span><span
+                                class="font-mono text-blue-400">3x 10-12</span></div>
+                    </div>
+                    <button onclick="loadExerciseFromCard('rdl')"
+                        class="w-full py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 font-bold text-xs border border-blue-500/30 transition">
+                        3D İcraya Bax
+                    </button>
+                </div>
+
+                <!-- Day 3 Card -->
+                <div
+                    class="glass-card p-5 rounded-3xl border-t-4 border-amber-400 hover:border-amber-300 transition space-y-4">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-black uppercase tracking-wider text-amber-400">Cümə Axşamı</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300">45-50
+                            Dəq</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">GÜN 3: Həcm & İzolyasiya</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Sarkoplazmik nasos və metabolik stress</p>
+                    </div>
+                    <div class="space-y-2 text-xs border-t border-slate-800 pt-3">
+                        <div class="flex justify-between text-slate-300"><span>1. Cable Leg Extension</span><span
+                                class="font-mono text-amber-400">3x 12-15</span></div>
+                        <div class="flex justify-between text-slate-300"><span>2. Station Pec Fly</span><span
+                                class="font-mono text-amber-400">3x 12-15</span></div>
+                        <div class="flex justify-between text-slate-300"><span>3. Close-Grip Pulldown</span><span
+                                class="font-mono text-amber-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>4. Overhead DB Triceps</span><span
+                                class="font-mono text-amber-400">3x 12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>5. Isometric Plank</span><span
+                                class="font-mono text-amber-400">3x 60s</span></div>
+                    </div>
+                    <button onclick="loadExerciseFromCard('leg_extension')"
+                        class="w-full py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 transition">
+                        3D İcraya Bax
+                    </button>
+                </div>
+
+                <!-- Day 4 Card -->
+                <div
+                    class="glass-card p-5 rounded-3xl border-t-4 border-emerald-400 hover:border-emerald-300 transition space-y-4">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-black uppercase tracking-wider text-emerald-400">Cümə</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300">45-50
+                            Dəq</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">GÜN 4: Baza Gücü & Estetika</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Unilateral balans, qol həcmi və duruş</p>
+                    </div>
+                    <div class="space-y-2 text-xs border-t border-slate-800 pt-3">
+                        <div class="flex justify-between text-slate-300"><span>1. DB Walking Lunges</span><span
+                                class="font-mono text-emerald-400">3x 10/ayaq</span></div>
+                        <div class="flex justify-between text-slate-300"><span>2. DB Single-Arm Row</span><span
+                                class="font-mono text-emerald-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>3. Floor Push-Ups</span><span
+                                class="font-mono text-emerald-400">3x Max</span></div>
+                        <div class="flex justify-between text-slate-300"><span>4. DB Hammer Curl</span><span
+                                class="font-mono text-emerald-400">3x 10-12</span></div>
+                        <div class="flex justify-between text-slate-300"><span>5. DB Rear Delt Fly</span><span
+                                class="font-mono text-emerald-400">3x 12-15</span></div>
+                    </div>
+                    <button onclick="loadExerciseFromCard('shoulder_press')"
+                        class="w-full py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 transition">
+                        3D İcraya Bax
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Dəqiqə-bə-Dəqiqə Sessiya Struktur Cədvəli -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-base lg:text-lg font-extrabold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Bir Məşq Sessiyasının Dəqiqəlik Biomexaniki Axını (0 - 50 Dəqiqə)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                        <div class="flex justify-between font-bold text-cyan-400">
+                            <span>00:00 - 08:00</span>
+                            <span>DİNAMİK İSTİLƏŞMƏ</span>
+                        </div>
+                        <p class="text-slate-300">Oynaq sinovial mayesini artırmaq, çiyin manjeti (rotator cuff) və
+                            bud-çanaq oynağını hərəkətə gətirmək (Heç bir statik dartınma edilmir!).</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                        <div class="flex justify-between font-bold text-emerald-400">
+                            <span>08:00 - 25:00</span>
+                            <span>ƏSAS BAZA HƏRƏKƏTLƏRİ</span>
+                        </div>
+                        <p class="text-slate-300">Squat, RDL, Chest Press və Lat Pulldown kimi yüksək sinir sistemi
+                            (CNS) tələb edən çoxoynaqlı hərəkətlərin 3 ağır işçi seti (Set arası 90-120 san dincəlmə).
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                        <div class="flex justify-between font-bold text-amber-400">
+                            <span>25:00 - 45:00</span>
+                            <span>HƏCM & İZOLYASİYA</span>
+                        </div>
+                        <p class="text-slate-300">Çiyin açılışları, qol və kor əzələləri. Oynaqlara minimal yük, əzələ
+                            liflərinə maksimal metabolik gərginlik (Set arası 60 san dincəlmə).</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                        <div class="flex justify-between font-bold text-indigo-400">
+                            <span>45:00 - 50:00</span>
+                            <span>KOR KARDİO & BƏRPA</span>
+                        </div>
+                        <p class="text-slate-300">Nəfəs dərəcəsinin normallaşdırılması, su balansı və parasimpatik sinir
+                            sisteminin aktivləşdirilməsi (anabolik mühitə keçid).</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- TAB 3: SCIENTIFIC AUDIT, MYTHS VS FACTS & VOLUME BREAKDOWN    -->
+        <!-- ============================================================= -->
+        <div id="tab-content-audit" class="hidden space-y-6">
+
+            <!-- Scientific Audit Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Column 1: Weekly Volume & Frequency Analysis -->
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex items-center space-x-2 text-cyan-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <h3 class="font-extrabold text-white text-base">Həftəlik Həcm (Volume) Auditi</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Müasir hipertrofiya tədqiqatlarına (Schoenfeld et al., Brad et al.) görə optimal böyümə
+                        pəncərəsi əzələ qrupu üzrə həftədə <strong class="text-cyan-400">10–20 ağır setdir</strong>.
+                        Sizin 4 günlük proqramınız:
+                    </p>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
+                            <span class="text-slate-300">Sinə (Chest):</span>
+                            <span class="text-emerald-400 font-bold">12 Set / Həftə (Optimal MAV)</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
+                            <span class="text-slate-300">Kürək (Lats/Row):</span>
+                            <span class="text-emerald-400 font-bold">12 Set / Həftə (Optimal)</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
+                            <span class="text-slate-300">Kvadriseps (Ön Ayaq):</span>
+                            <span class="text-emerald-400 font-bold">9 Set / Həftə (Başlanğıc üçün əla)</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
+                            <span class="text-slate-300">Hamstring / Glute:</span>
+                            <span class="text-amber-400 font-bold">6 Set / Həftə (Minimal Effekt)</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
+                            <span class="text-slate-300">Qollar (Bi & Tri):</span>
+                            <span class="text-emerald-400 font-bold">6 İzolyasiya + 24 Kompound</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic">
+                        Elmi tövsiyə: Hamstring həcmini artırmaq üçün 4-cü günə yüngül RDL və ya yerində ayaq bükmə (Leg
+                        Curl) əlavəsi tövsiyə edilir.
+                    </p>
+                </div>
+
+                <!-- Column 2: CNS & Joint Fatigue Management -->
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex items-center space-x-2 text-amber-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <h3 class="font-extrabold text-white text-base">CNS & Oynaq Stressinin Təhlili</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Həftədə 4 gün Full-Body icra edərkən ən böyük risk əzələ deyil, <strong>vətər və mərkəzi sinir
+                            sistemi (CNS) tükənməsidir</strong>:
+                    </p>
+                    <div class="space-y-2.5 text-xs text-slate-300">
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                            <span class="font-bold text-white block mb-0.5">Bazar ertəsi & Çərşənbə axşamı
+                                ardıcıllığı:</span>
+                            1-ci gün ayaq itələmə (Goblet Squat), 2-ci gün isə omba açılışı (RDL) qoyulduğundan bel
+                            fəqərələrinə düşən kompressiya balansı qorunur.
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                            <span class="font-bold text-white block mb-0.5">Push/Pull Proporsiyası:</span>
+                            Sinə və çiyin itələmə hərəkətləri həftəlik 18 set, kürək və arxa çiyin çəkişləri isə 18 set
+                            təşkil edir. Bu 1:1 nisbəti çiyin daxili fırlanmasının (rotasiya) və kambur duruşun
+                            qarşısını tam alır.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Biomechanical Health Connection -->
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex items-center space-x-2 text-emerald-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <h3 class="font-extrabold text-white text-base">Check-Up ilə Biomexaniki Əlaqə</h3>
+                    </div>
+                    <div class="space-y-3 text-xs text-slate-300">
+                        <p>
+                            Rentgen və qan göstəriciləriniz (Hgb 16, EÇS 2) toxumaların oksigenləşməsinin əla olduğunu
+                            göstərir. Bu, setlər arasında bərpanı sürətləndirir.
+                        </p>
+                        <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200">
+                            <strong class="text-amber-400 block mb-1">Meteorizm və Qarın Dibi Təzyiqi:</strong>
+                            USM-də görünən meteorizm (qaz) ağır Squat və RDL zamanı düzgün <em>Valsalva manevrasını</em>
+                            (nəfəsi qarına yığıb kəmər kimi sıxma) çətinləşdirə bilər. Qaz yaradan çiy kokteyl
+                            tərkiblərini azaltmaq bel sabitliyini birbaşa artıracaqdır.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGOROUS SKEPTICISM: MYTHS VS FACTS MATRIX -->
+            <div class="glass-card p-6 rounded-3xl space-y-6">
+                <div>
+                    <h3 class="text-lg lg:text-xl font-black text-white flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        Elmi İdman Skeptisizmi: Miflər, Faktlar və Fərziyyələr
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Populyar fitness mifləri ilə müasir idman fiziologiyası
+                        arasındakı fərq.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <!-- Myth Card 1 -->
+                    <div
+                        class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-3">
+                        <div>
+                            <span
+                                class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-950 text-red-400 border border-red-800/40 uppercase">MİF
+                                #1</span>
+                            <h4 class="text-sm font-bold text-white mt-2">"4 gün eyni əzələni işlətmək dərhal katabolizm
+                                (əzələ əriməsi) yaradır."</h4>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300">
+                            <strong class="text-emerald-400 block mb-1">ELMİ FAKT:</strong>
+                            Əzələ zülal sintezi (MPS) hər məşqdən sonra cəmi 24-36 saat pik həddə qalır. Həcmi kiçik
+                            porsiyalarla (gündə cəmi 3 set) həftəyə yaymaq, əzələni həftədə 1 dəfə 15 setlə yandırmaqdan
+                            qat-qat anabolikdir. Məsələ tezlikdə deyil, ümumi həftəlik setlərin həcmindədir.
+                        </div>
+                    </div>
+
+                    <!-- Myth Card 2 -->
+                    <div
+                        class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-3">
+                        <div>
+                            <span
+                                class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-950 text-red-400 border border-red-800/40 uppercase">MİF
+                                #2</span>
+                            <h4 class="text-sm font-bold text-white mt-2">"Məşq 55 dəqiqəni keçsə kortizol yüksəlir və
+                                əzələ böyüməsi dayanır."</h4>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300">
+                            <strong class="text-emerald-400 block mb-1">ELMİ FAKT:</strong>
+                            Məşq zamanı kortizolun artması təbii adaptasiyadır və hipertrofiyanı ləğv etmir. Tədqiqatlar
+                            göstərir ki, kəskin hormonal sıçrayışlar əzələ kütləsinə yox, ümumi kalori profisiti və
+                            mexaniki gərginliyin miqdarına tabedir. Əsas amil vaxt deyil, keyfiyyətsiz "junk volume"
+                            etməməkdir.
+                        </div>
+                    </div>
+
+                    <!-- Myth Card 3 -->
+                    <div
+                        class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-3">
+                        <div>
+                            <span
+                                class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-950 text-red-400 border border-red-800/40 uppercase">MİF
+                                #3</span>
+                            <h4 class="text-sm font-bold text-white mt-2">"Hər məşqdə çəki artırmırsansa, hipertrofiya
+                                stimullaşmır."</h4>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300">
+                            <strong class="text-emerald-400 block mb-1">ELMİ FAKT:</strong>
+                            Progressive Overload yalnız disk əlavə etmək deyil. Eyni çəki ilə təkrar sayını 8-dən 11-ə
+                            çatdırmaq, eksentrik fazanı 3 saniyəyə qədər yavaşlatmaq və ya hərəkət amplitudasını
+                            dərinləşdirmək də mexaniki gərginliyi eyni səviyyədə artırır.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- TAB 4: LIVE WORKOUT TRACKER & TIMER                           -->
+        <!-- ============================================================= -->
+        <div id="tab-content-tracker" class="hidden space-y-6">
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Live Rest Timer & Stopwatch Card -->
+                <div class="glass-card p-6 rounded-3xl space-y-5 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Real-Vaxt Taymeri</span>
+                        <div class="text-5xl lg:text-6xl font-black font-mono text-white mt-2" id="rest-timer-display">
+                            01:30
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Setlər arası optimal bərpa intervalı</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="startRestTimer(60)"
+                            class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">60s
+                            (İzolyasiya)</button>
+                        <button onclick="startRestTimer(90)"
+                            class="flex-1 py-2.5 rounded-xl bg-cyan-950 border border-cyan-800 text-xs font-bold text-cyan-400">90s
+                            (Standart)</button>
+                        <button onclick="startRestTimer(120)"
+                            class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">120s
+                            (Baza)</button>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
+                        <button onclick="toggleTimerRunning()" id="timer-toggle-btn"
+                            class="flex-1 py-3 rounded-2xl bg-cyan-500 text-slate-950 font-bold text-sm shadow hover:bg-cyan-400 transition">
+                            Taymeri Başlat
+                        </button>
+                        <button onclick="resetRestTimer()"
+                            class="px-4 py-3 rounded-2xl bg-slate-800 text-slate-400 hover:text-white transition">
+                            Sıfırla
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Set Logger -->
+                <div class="lg:col-span-2 glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-extrabold text-white">İşçi Setlərin Qeydiyyatı</h3>
+                            <p class="text-xs text-slate-400">Məşq zamanı qaldırdığınız real yükləri qeyd edin</p>
+                        </div>
+                        <span
+                            class="text-xs font-mono text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-800/40">3
+                            İşçi Set</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Set 1 -->
+                        <div
+                            class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <span
+                                    class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center">1</span>
+                                <div>
+                                    <div class="text-xs font-bold text-white">SET 1 (Orta Ağırlıq)</div>
+                                    <div class="text-[11px] text-slate-400">Hədəf: 12 təkrar @ RIR 2</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Çəki (kq)" value="14"
+                                    class="w-24 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <input type="number" placeholder="Təkrar" value="12"
+                                    class="w-20 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <button onclick="markSetComplete(this)"
+                                    class="p-2 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-black text-slate-400 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Set 2 -->
+                        <div
+                            class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <span
+                                    class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center">2</span>
+                                <div>
+                                    <div class="text-xs font-bold text-white">SET 2 (Əsas Yük)</div>
+                                    <div class="text-[11px] text-slate-400">Hədəf: 10 təkrar @ RIR 1-2</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Çəki (kq)" value="16"
+                                    class="w-24 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <input type="number" placeholder="Təkrar" value="10"
+                                    class="w-20 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <button onclick="markSetComplete(this)"
+                                    class="p-2 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-black text-slate-400 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Set 3 -->
+                        <div
+                            class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <span
+                                    class="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 font-bold font-mono text-xs flex items-center justify-center">3</span>
+                                <div>
+                                    <div class="text-xs font-bold text-white">SET 3 (Zirvə Set)</div>
+                                    <div class="text-[11px] text-slate-400">Hədəf: 10 təkrar @ RIR 1 (Tükənmə həddi)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Çəki (kq)" value="16"
+                                    class="w-24 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <input type="number" placeholder="Təkrar" value="10"
+                                    class="w-20 bg-slate-950 border border-slate-700 text-white rounded-xl px-2.5 py-1.5 text-xs text-center">
+                                <button onclick="markSetComplete(this)"
+                                    class="p-2 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-black text-slate-400 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JAVASCRIPT & THREE.JS ENGINE -->
+    <script>
+        /* =========================================================================
+           1. EXERCISE DATABASE & BIOMECHANICAL SPECIFICATIONS
+           ========================================================================= */
+        const WORKOUT_DATA = {
+            day1: {
+                title: "GÜN 1: İtələmə & Ön Zəncir",
+                desc: "Kvadriseps, Sinə və Ön Çiyin dominantlığı",
+                exercises: [
+                    {
+                        id: "goblet_squat",
+                        name: "Dumbbell Goblet Squat",
+                        category: "squat",
+                        tempo: "3-1-1-0 (3s Eksentrik | 1s Dərin Pause)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 2 (Tükənməyə 2 təkrar qalmış dayandırın)",
+                        primary: "Quadriceps (Dördbaslı), Gluteus Maximus (Böyük Yan)",
+                        secondary: "Hamstrings, Adductors (Yaxınlaşdırıcılar)",
+                        stabilizers: "Erector Spinae (Bel), Transversus Core, Ön Deltoid",
+                        primaryPct: "94%",
+                        secondaryPct: "65%",
+                        stabilizerPct: "55%",
+                        cues: [
+                            "Qanteli dirsəkləri bükərək sinənin yuxarı hissəsində bərk saxlayın.",
+                            "Ayaqları çiyin genişliyində açıb pəncələri 15-20° bayıra yönəldin.",
+                            "Dizləri pəncə xətti boyu itələyərək budlar yerə paralel olana qədər enin.",
+                            "Dabanları yerdən qaldırmayın; ağırlığı ayağın ortasına paylayın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Dizlərin içəriyə çökməsi (Knee Valgus) və Belin Bükülməsi",
+                        mistakeDesc: "Enərkən dizlər daxilə əyilir və dabanlar qalxır. Bu, menisklərə kəskin rotasion stress yükləyir."
+                    },
+                    {
+                        id: "chest_press",
+                        name: "Stansiyada Chest Press",
+                        category: "press",
+                        tempo: "3-0-1-1 (3s Enmə | 1s Zirvə Sıxılma)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 1-2 (Sinə əzələsində tam yanma)",
+                        primary: "Pectoralis Major (Böyük Sinə Əzələsi)",
+                        secondary: "Triceps Brachii, Anterior Deltoid (Ön Çiyin)",
+                        stabilizers: "Rotator Cuff, Serratus Anterior, Bədən Sabitliyi",
+                        primaryPct: "92%",
+                        secondaryPct: "70%",
+                        stabilizerPct: "40%",
+                        cues: [
+                            "Kürək qanadlarını (scapula) stansiyanın arxalığına sıxın və sabit saxlayın.",
+                            "Dirsəkləri 90 dərəcə yox, bədənlə 45-60 dərəcə bucaqda açın.",
+                            "İtələyərkən çiyinləri qulaqlara doğru qaldırmayın (trapezi söndürün).",
+                            "Sinə əzələsini tam dartaraq yavaş-yavaş başlanğıca qayıdın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Dirsəklərin 90° Açılması və Çiyinlərin İrəli Qaçması",
+                        mistakeDesc: "Dirsəklər çiyin oxunda 90 dərəcə açıldıqda subakromial sıxılma (impingement) və manjet zədəsi yaranır."
+                    },
+                    {
+                        id: "lat_pulldown",
+                        name: "Stansiyada Lat Pulldown (Geniş tutuş)",
+                        category: "pulldown",
+                        tempo: "2-1-1-1 (2s Qalxma | 1s Aşağıda Dartma)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 1 (Kürək qanadlarını tam izolyasiya edin)",
+                        primary: "Latissimus Dorsi (Kürək Qanadları)",
+                        secondary: "Biceps Brachii, Brachialis, Teres Major, Rhomboids",
+                        stabilizers: "Arxa Çiyin, Ön qol bükücüləri, Core",
+                        primaryPct: "95%",
+                        secondaryPct: "68%",
+                        stabilizerPct: "45%",
+                        cues: [
+                            "Qolu çiyinlərdən bir qədər geniş tutun, gövdəni 10-15° arxaya meylləndirin.",
+                            "Hərəkəti qollarla deyil, kürək qanadlarını aşağı çəkərək (depressiya) başladın.",
+                            "Dəstəyi körpücük sümüyünə (çənənin altına) qədər endirib 1 saniyə sıxın.",
+                            "Ağırlığı buraxarkən qanadların tam dartılmasını təmin edin."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Gövdə ilə Arxaya Həddindən Artıq Yellənmə (Momentum)",
+                        mistakeDesc: "Çəkini qanad əzələsi ilə deyil, beli arxaya ataraq inersiya ilə çəkmək beli zədələyir və lat aktivliyini 50% azaldır."
+                    },
+                    {
+                        id: "shoulder_press",
+                        name: "Dumbbell Shoulder Press",
+                        category: "overhead",
+                        tempo: "2-0-1-1 (2s Eksentrik | 1s Yuxarıda Təkan)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 2 (Belin arxaya əyilməsinə yol verməyin)",
+                        primary: "Anterior & Lateral Deltoid (Ön və Yan Çiyin)",
+                        secondary: "Triceps Brachii, Yuxarı Sinə Lifləri",
+                        stabilizers: "Core Abdominals, Serratus Anterior",
+                        primaryPct: "90%",
+                        secondaryPct: "60%",
+                        stabilizerPct: "65%",
+                        cues: [
+                            "Qantelləri skapulyar müstəvidə (dirsəklər 30° qabağa meylli) qaldırın.",
+                            "Qarın və sağrı əzələlərini bərk saxlayaraq belin bükülməsinin qarşısını alın.",
+                            "Qantelləri baş üzərində toqquşdurmayın; trayektoriyanı paralel saxlayın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Beldə Həddindən Artıq Lordoz (Arxaya Bükülmə)",
+                        mistakeDesc: "Çəki ağır gəldikdə gövdə arxaya əyilir və hərəkət meylli sinə pressinə çevrilərək fəqərələrə kəskin təzyiq edir."
+                    },
+                    {
+                        id: "triceps_pushdown",
+                        name: "Stansiyada Cable Triceps Pushdown",
+                        category: "triceps",
+                        tempo: "3-0-1-1 (3s Nəzarətli Qalxma | 1s Dirsək Kilidi)",
+                        setsReps: "3 Set x 12–15 təkrar",
+                        rirInfo: "RIR 1 (Triceps əzələsində maksimal metabolik nasos)",
+                        primary: "Triceps Brachii (Bütün 3 baş: Yan, Orta və Uzun)",
+                        secondary: "Anconeus",
+                        stabilizers: "Ön qol bilək sabitləşdiriciləri, Qarın",
+                        primaryPct: "96%",
+                        secondaryPct: "30%",
+                        stabilizerPct: "40%",
+                        cues: [
+                            "Dirsəkləri bədənin yan tərəfinə yapışdırın və məşq boyu tərpətməyin.",
+                            "Yalnız dirsək oynağından hərəkət edərək dəstəyi aşağıya tam basın.",
+                            "Yuxarı qalxarkən dirsəkləri 90 dərəcədən yuxarı qaldırıb çiyini işə salmayın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Dirsəklərin İrəli-Geri Yellənməsi və Çiyin Təkanı",
+                        mistakeDesc: "Dirsəklər yerindən oynadıqda yük tricepsdən çıxıb ön çiyin və kürəyə paylanır."
+                    }
+                ]
+            },
+            day2: {
+                title: "GÜN 2: Çəkmə & Arxa Zəncir",
+                desc: "Hamstring, Kürək qalınlığı və Yan Çiyin",
+                exercises: [
+                    {
+                        id: "rdl",
+                        name: "Dumbbell Romanian Deadlift (RDL)",
+                        category: "hinge",
+                        tempo: "3-1-1-0 (3s Arxa Hinge | 1s Dartılma)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 2 (Onurğanı neytral saxlamaq şərtdir)",
+                        primary: "Hamstrings (Budun arxası), Gluteus Maximus",
+                        secondary: "Erector Spinae (Bel boyu əzələlər), Adductor Magnus",
+                        stabilizers: "Latissimus Dorsi, Trapez, Qarın İçi Təzyiq",
+                        primaryPct: "96%",
+                        secondaryPct: "75%",
+                        stabilizerPct: "70%",
+                        cues: [
+                            "Dizləri cüzi bükün (15-20°) və bütün hərəkət boyu bu bucağı dondurun.",
+                            "Çanağı divara doğru arxaya itələyin (Hip Hinge mexanikası).",
+                            "Qantelləri ayaq baldırlarına mümkün qədər yaxın saxlayaraq endirin.",
+                            "Budun arxasında kəskin gərilmə hiss etdikdə ombanı sıxaraq qalxın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Belin Donqarlaşması və Dizin Artıq Bükülməsi",
+                        mistakeDesc: "Ombanı arxaya itələmək əvəzinə beli bükərək qanteli yerə çatdırmağa çalışmaq disk yırtığı riskini maksimuma qaldırır."
+                    },
+                    {
+                        id: "cable_row",
+                        name: "Stansiyada Aşağı Blokdan Qarına Çəkiş",
+                        category: "row",
+                        tempo: "2-1-1-1 (2s Buraxma | 1s Kürək Sıxılması)",
+                        setsReps: "3 Set x 10–12 təkrar",
+                        rirInfo: "RIR 1-2 (Kürək ortasında sıxılma)",
+                        primary: "Rhomboids, Middle & Lower Trapezius, Latissimus Dorsi",
+                        secondary: "Biceps Brachii, Brachialis, Arxa Çiyin",
+                        stabilizers: "Erector Spinae, Hamstrings (İzometrik baza)",
+                        primaryPct: "92%",
+                        secondaryPct: "65%",
+                        stabilizerPct: "60%",
+                        cues: [
+                            "Döş qəfəsini dik tutun, çiyinləri aşağı salın.",
+                            "Dəstəyi qarın boşluğuna (göbək nahiyəsinə) doğru çəkin.",
+                            "Kürək qanadlarını bir-birinə yaxınlaşdıraraq 1 saniyə izometrik saxlayın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Beli Qabağa-Arxaya Yelləmək (Hip Swing)",
+                        mistakeDesc: "Aşağı beli yelləyərək çəkmək kürək əzələlərinin işini azaldır və fəqərələrdə gərəksiz kəsmə qüvvəsi yaradır."
+                    },
+                    {
+                        id: "lateral_raise",
+                        name: "Dumbbell Lateral Raise",
+                        category: "delts",
+                        tempo: "2-0-1-1 (2s Yavaş Enmə | 1s Yana Açılış)",
+                        setsReps: "3 Set x 12–15 təkrar",
+                        rirInfo: "RIR 1 (Çiyinlərin V-şəkilli genişlənməsi üçün)",
+                        primary: "Lateral Deltoid (Orta/Yan Çiyin Əzələsi)",
+                        secondary: "Anterior & Posterior Deltoid, Supraspinatus",
+                        stabilizers: "Trapezius Yuxarı lifləri, Bilək sabitləyiciləri",
+                        primaryPct: "98%",
+                        secondaryPct: "40%",
+                        stabilizerPct: "30%",
+                        cues: [
+                            "Gövdəni cüzi (5-10°) qabağa əyin, dirsəkləri yüngülcə bükün.",
+                            "Qantelləri qolları yana ataraq çiyin hündürlüyünə qaldırın.",
+                            "Çiyinləri qulaqlara doğru qaldırmayın (trapezi oyatmamaq üçün)."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Trapezi Sıxmaq və Gövdə ilə Təkan Vermək",
+                        mistakeDesc: "Həddən artıq ağır qantel götürüb bədənlə tullanmaq yükü yan çiyindən alıb boyun və trapeze ötürür."
+                    }
+                ]
+            },
+            day3: {
+                title: "GÜN 3: Həcm & İzolyasiya",
+                desc: "Sarkoplazmik nasos və metabolik stress",
+                exercises: [
+                    {
+                        id: "leg_extension",
+                        name: "Stansiyada Leg Extension (Ayaq Açma)",
+                        category: "quad_iso",
+                        tempo: "2-1-1-1 (2s Enmə | 1s Təpədə Kvadriseps Kilidi)",
+                        setsReps: "3 Set x 12–15 təkrar",
+                        rirInfo: "RIR 0-1 (Tam metabolik yanma)",
+                        primary: "Rectus Femoris & Vastus Lateralis/Medialis (Kvadriseps)",
+                        secondary: "Articularis Genu",
+                        stabilizers: "Qarın koru, Əl tutacaqları",
+                        primaryPct: "99%",
+                        secondaryPct: "10%",
+                        stabilizerPct: "20%",
+                        cues: [
+                            "Diz oynağını aparatın fırlanma oxu ilə tam bərabərləşdirin.",
+                            "Aşağı baldır yastığını pəncə bükümünün bir qədər üstünə yerləşdirin.",
+                            "Ayaqları yuxarı açaraq dördbaslı əzələni 1 saniyə daş kimi sıxın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Çanağı Oturacaqdan Qaldırmaq və Tələsmək",
+                        mistakeDesc: "Çanaq havaya qalxdıqda diz oynağına həddən artıq qeyri-təbii kəsmə stressi düşür."
+                    }
+                ]
+            },
+            day4: {
+                title: "GÜN 4: Baza Gücü & Estetika",
+                desc: "Unilateral balans, qol həcmi və duruş",
+                exercises: [
+                    {
+                        id: "goblet_squat", // Reuse squat asset
+                        name: "Dumbbell Walking Lunge (və ya Squat)",
+                        category: "squat",
+                        tempo: "2-1-1-0 (Addımlama & Balans)",
+                        setsReps: "3 Set x 10 təkrar/ayaq",
+                        rirInfo: "RIR 2 (Balans və stabil addım)",
+                        primary: "Quadriceps, Gluteus Maximus",
+                        secondary: "Hamstrings, Calves",
+                        stabilizers: "Adductors, Core, Çiyin qurşağı",
+                        primaryPct: "92%",
+                        secondaryPct: "70%",
+                        stabilizerPct: "60%",
+                        cues: [
+                            "Geniş addım atın, arxa dizi yerə toxunmağa 2 sm qalmış saxlayın.",
+                            "Ön diz pəncə xəttini keçə bilər, amma daban yerdən qopmamalıdır.",
+                            "Gövdəni dik və qarnı gərgin saxlayın."
+                        ],
+                        mistakeTitle: "Kritik Xəta: Ön Dabanın Qalxması və Gövdənin Yanlara Yıxılması",
+                        mistakeDesc: "Addım çox qısa olduqda ön dizə ifrat təzyiq düşür və balans itir."
+                    }
+                ]
+            }
+        };
+
+        /* =========================================================================
+           2. THREE.JS 3D SCENE & PROCEDURAL MANNEQUIN RIGGING
+           ========================================================================= */
+        let scene, camera, renderer, controls;
+        let container = document.getElementById('threejs-container');
+        let mannequinGroup, trajectoryLine;
+        let isPlaying = true;
+        let animProgress = 0;
+        let animSpeed = 1.0;
+        let isCorrectForm = true;
+        let activeExerciseId = "goblet_squat";
+        let activeExerciseData = WORKOUT_DATA.day1.exercises[0];
+
+        // Articulated Mannequin Mesh Parts References
+        let bodyParts = {
+            root: null,
+            pelvis: null,
+            spine: null,
+            chest: null,
+            head: null,
+            leftClavicle: null,
+            leftUpperArm: null,
+            leftForearm: null,
+            leftHand: null,
+            rightClavicle: null,
+            rightUpperArm: null,
+            rightForearm: null,
+            rightHand: null,
+            leftUpperLeg: null,
+            leftLowerLeg: null,
+            leftFoot: null,
+            rightUpperLeg: null,
+            rightLowerLeg: null,
+            rightFoot: null,
+            // Muscle groups for dynamic heatmap coloring
+            muscles: {
+                quads: [],
+                glutes: [],
+                hamstrings: [],
+                chest: [],
+                lats: [],
+                deltoids: [],
+                triceps: [],
+                biceps: [],
+                core: []
+            },
+            // Equipment meshes
+            equipment: {
+                dumbbellLeft: null,
+                dumbbellRight: null,
+                dumbbellCenter: null,
+                pulldownBar: null,
+                pulldownCable: null
+            }
+        };
+
+        // Initialize 3D Engine
+        function init3D() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c121e);
+            scene.fog = new THREE.FogExp2(0x0c121e, 0.08);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 50);
+            camera.position.set(0, 1.4, 3.8);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05; // don't go under floor
+            controls.minDistance = 1.2;
+            controls.maxDistance = 7;
+            controls.target.set(0, 1.0, 0);
+
+            // Lighting Rig
+            setupLighting();
+
+            // Environment & Training Ground
+            setupFloorGrid();
+
+            // Build Procedural Anatomical 3D Mannequin
+            buildMannequin();
+
+            // Build 3D Trajectory Ribbon
+            setupTrajectoryLine();
+
+            // Resize Handler
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Render Loop
+            animate();
+        }
+
+        function setupLighting() {
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+            mainLight.position.set(3, 5, 4);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 1024;
+            mainLight.shadow.mapSize.height = 1024;
+            scene.add(mainLight);
+
+            const rimLight = new THREE.DirectionalLight(0xf97316, 0.8);
+            rimLight.position.set(-3, 3, -3);
+            scene.add(rimLight);
+
+            const floorLight = new THREE.PointLight(0x06b6d4, 0.5, 6);
+            floorLight.position.set(0, 0.2, 0);
+            scene.add(floorLight);
+        }
+
+        function setupFloorGrid() {
+            // Tech Circular Platform
+            const stageGeo = new THREE.CylinderGeometry(1.8, 1.9, 0.08, 48);
+            const stageMat = new THREE.MeshStandardMaterial({
+                color: 0x111927,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const stage = new THREE.Mesh(stageGeo, stageMat);
+            stage.position.y = -0.04;
+            stage.receiveShadow = true;
+            scene.add(stage);
+
+            // Grid Overlay
+            const gridHelper = new THREE.GridHelper(3.6, 16, 0x0ea5e9, 0x1e293b);
+            gridHelper.position.y = 0.002;
+            scene.add(gridHelper);
+
+            // Glowing Target Circle
+            const ringGeo = new THREE.RingGeometry(1.4, 1.45, 48);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.003;
+            scene.add(ring);
+        }
+
+        // Material Generator Helper
+        function createMuscleMat(type) {
+            return new THREE.MeshStandardMaterial({
+                color: 0x334155,
+                roughness: 0.35,
+                metalness: 0.2,
+                emissive: 0x000000,
+                emissiveIntensity: 0.2
+            });
+        }
+
+        // Procedurally Construct Hierarchical Anatomical Mannequin
+        function buildMannequin() {
+            mannequinGroup = new THREE.Group();
+            scene.add(mannequinGroup);
+
+            const boneMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+            const jointMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.8 });
+
+            // Root Pelvis Center (Pivot for Squats and Hinges)
+            const pelvisGroup = new THREE.Group();
+            pelvisGroup.position.set(0, 0.95, 0);
+            mannequinGroup.add(pelvisGroup);
+            bodyParts.pelvis = pelvisGroup;
+
+            // Pelvis Mesh
+            const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.15, 16), createMuscleMat('glute'));
+            pelvisMesh.castShadow = true;
+            pelvisGroup.add(pelvisMesh);
+            bodyParts.muscles.glutes.push(pelvisMesh);
+
+            // Spine & Core Segment
+            const spineGroup = new THREE.Group();
+            spineGroup.position.set(0, 0.1, 0);
+            pelvisGroup.add(spineGroup);
+            bodyParts.spine = spineGroup;
+
+            const abdomenMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.18, 16), createMuscleMat('core'));
+            abdomenMesh.position.y = 0.09;
+            abdomenMesh.castShadow = true;
+            spineGroup.add(abdomenMesh);
+            bodyParts.muscles.core.push(abdomenMesh);
+
+            // Chest / Thorax Group
+            const chestGroup = new THREE.Group();
+            chestGroup.position.set(0, 0.2, 0);
+            spineGroup.add(chestGroup);
+            bodyParts.chest = chestGroup;
+
+            // Chest/Pectoral Ribcage
+            const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.2), createMuscleMat('chest'));
+            chestMesh.position.y = 0.11;
+            chestMesh.castShadow = true;
+            chestGroup.add(chestMesh);
+            bodyParts.muscles.chest.push(chestMesh);
+
+            // Latissimus Wings (Back)
+            const latMesh = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.08), createMuscleMat('lats'));
+            latMesh.position.set(0, 0.09, -0.08);
+            chestGroup.add(latMesh);
+            bodyParts.muscles.lats.push(latMesh);
+
+            // Neck & Head
+            const headGroup = new THREE.Group();
+            headGroup.position.set(0, 0.25, 0);
+            chestGroup.add(headGroup);
+            bodyParts.head = headGroup;
+
+            const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.08, 12), boneMat);
+            neckMesh.position.y = 0.04;
+            headGroup.add(neckMesh);
+
+            const skullMesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), boneMat);
+            skullMesh.position.set(0, 0.16, 0.02);
+            skullMesh.scale.set(0.9, 1.15, 1.0);
+            headGroup.add(skullMesh);
+
+            // Visor / Face Direction Indicator
+            const visorMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.06), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+            visorMesh.position.set(0, 0.16, 0.1);
+            headGroup.add(visorMesh);
+
+            // ARMS SETUP (LEFT & RIGHT)
+            ['left', 'right'].forEach(side => {
+                const isLeft = side === 'left';
+                const sign = isLeft ? 1 : -1;
+
+                // Shoulder Joint
+                const shoulderJoint = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), jointMat);
+                shoulderJoint.position.set(sign * 0.22, 0.18, 0);
+                chestGroup.add(shoulderJoint);
+
+                // Upper Arm Group
+                const upperArmGroup = new THREE.Group();
+                upperArmGroup.position.set(sign * 0.22, 0.18, 0);
+                chestGroup.add(upperArmGroup);
+
+                // Deltoid Muscle Cap
+                const deltMesh = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 14), createMuscleMat('deltoid'));
+                upperArmGroup.add(deltMesh);
+                bodyParts.muscles.deltoids.push(deltMesh);
+
+                // Biceps/Triceps Bicep Tube
+                const armTube = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.26, 12), createMuscleMat('biceps'));
+                armTube.position.y = -0.13;
+                armTube.castShadow = true;
+                upperArmGroup.add(armTube);
+                bodyParts.muscles.biceps.push(armTube);
+                bodyParts.muscles.triceps.push(armTube);
+
+                // Forearm Group
+                const forearmGroup = new THREE.Group();
+                forearmGroup.position.set(0, -0.26, 0);
+                upperArmGroup.add(forearmGroup);
+
+                const elbowJoint = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), jointMat);
+                forearmGroup.add(elbowJoint);
+
+                const forearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.038, 0.24, 12), boneMat);
+                forearmMesh.position.y = -0.12;
+                forearmMesh.castShadow = true;
+                forearmGroup.add(forearmMesh);
+
+                // Hand
+                const handGroup = new THREE.Group();
+                handGroup.position.set(0, -0.25, 0);
+                forearmGroup.add(handGroup);
+
+                const handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.03), jointMat);
+                handMesh.position.y = -0.04;
+                handGroup.add(handMesh);
+
+                if (isLeft) {
+                    bodyParts.leftUpperArm = upperArmGroup;
+                    bodyParts.leftForearm = forearmGroup;
+                    bodyParts.leftHand = handGroup;
+                } else {
+                    bodyParts.rightUpperArm = upperArmGroup;
+                    bodyParts.rightForearm = forearmGroup;
+                    bodyParts.rightHand = handGroup;
+                }
+            });
+
+            // LEGS SETUP (LEFT & RIGHT)
+            ['left', 'right'].forEach(side => {
+                const isLeft = side === 'left';
+                const sign = isLeft ? 1 : -1;
+
+                // Hip Joint
+                const hipJoint = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), jointMat);
+                hipJoint.position.set(sign * 0.12, -0.05, 0);
+                pelvisGroup.add(hipJoint);
+
+                // Upper Leg Group (Thigh)
+                const upperLegGroup = new THREE.Group();
+                upperLegGroup.position.set(sign * 0.12, -0.05, 0);
+                pelvisGroup.add(upperLegGroup);
+
+                // Quad & Hamstring Thigh Mesh
+                const thighMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.065, 0.42, 16), createMuscleMat('quad'));
+                thighMesh.position.y = -0.21;
+                thighMesh.castShadow = true;
+                upperLegGroup.add(thighMesh);
+                bodyParts.muscles.quads.push(thighMesh);
+                bodyParts.muscles.hamstrings.push(thighMesh);
+
+                // Lower Leg (Calf & Shin)
+                const lowerLegGroup = new THREE.Group();
+                lowerLegGroup.position.set(0, -0.42, 0);
+                upperLegGroup.add(lowerLegGroup);
+
+                const kneeJoint = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 12), jointMat);
+                lowerLegGroup.add(kneeJoint);
+
+                const calfMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.045, 0.42, 14), boneMat);
+                calfMesh.position.y = -0.21;
+                calfMesh.castShadow = true;
+                lowerLegGroup.add(calfMesh);
+
+                // Foot
+                const footMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.18), boneMat);
+                footMesh.position.set(0, -0.43, 0.05);
+                footMesh.castShadow = true;
+                lowerLegGroup.add(footMesh);
+
+                if (isLeft) {
+                    bodyParts.leftUpperLeg = upperLegGroup;
+                    bodyParts.leftLowerLeg = lowerLegGroup;
+                } else {
+                    bodyParts.rightUpperLeg = upperLegGroup;
+                    bodyParts.rightLowerLeg = lowerLegGroup;
+                }
+            });
+
+            // Build Equipment Props
+            buildEquipmentProps();
+
+            // Trigger initial muscle coloring
+            updateMuscleHeatMap();
+        }
+
+        function buildEquipmentProps() {
+            // 1. Center Goblet Dumbbell
+            const dbGroup = new THREE.Group();
+            const dbHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 12), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 }));
+            const dbPlate1 = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 20), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 }));
+            const dbPlate2 = dbPlate1.clone();
+            dbPlate1.position.y = 0.09;
+            dbPlate2.position.y = -0.09;
+            dbGroup.add(dbHandle, dbPlate1, dbPlate2);
+            scene.add(dbGroup);
+            bodyParts.equipment.dumbbellCenter = dbGroup;
+
+            // 2. Lat Pulldown Overhead Bar & Cable
+            const barGroup = new THREE.Group();
+            const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 }));
+            bar.rotation.z = Math.PI / 2;
+            barGroup.add(bar);
+            scene.add(barGroup);
+            bodyParts.equipment.pulldownBar = barGroup;
+        }
+
+        function setupTrajectoryLine() {
+            const maxPoints = 80;
+            const points = [];
+            for (let i = 0; i < maxPoints; i++) {
+                points.push(new THREE.Vector3(0, 1.0, 0));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: 0x38bdf8,
+                linewidth: 3,
+                transparent: true,
+                opacity: 0.8
+            });
+            trajectoryLine = new THREE.Line(geometry, material);
+            scene.add(trajectoryLine);
+        }
+
+        /* =========================================================================
+           3. KINEMATIC ANIMATION SOLVERS & EXERCISE LOGIC
+           ========================================================================= */
+        let trajectoryHistory = [];
+
+        function updateKinematics(t) {
+            // t is normalized 0.0 -> 1.0 in sine loop:
+            // phase 0->0.5: Eccentric (Enmə/Geri çəkilmə), phase 0.5->1.0: Concentric (Təkan/Qaldırma)
+            const cycle = Math.sin(t * Math.PI * 2) * 0.5 + 0.5; // 0.0 to 1.0 smooth
+
+            // Phase indicator UI update
+            const phaseBadge = document.getElementById('motion-phase-badge');
+            if (t < 0.45) {
+                phaseBadge.innerText = "Eksentrik (Nəzarətli Enmə / Dartılma)";
+                phaseBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+            } else if (t >= 0.45 && t <= 0.55) {
+                phaseBadge.innerText = "Zirvə Sıxılma (Peak Contraction)";
+                phaseBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40";
+            } else {
+                phaseBadge.innerText = "Konsentrik (Güclü Təkan / Qaldırma)";
+                phaseBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+            }
+
+            // Hide all equipment by default; enable per exercise
+            bodyParts.equipment.dumbbellCenter.visible = false;
+            bodyParts.equipment.pulldownBar.visible = false;
+
+            // Reset default transforms
+            resetMannequinTransforms();
+
+            let trackerPos = new THREE.Vector3();
+
+            // ==========================
+            // EXERCISE A: GOBLET SQUAT
+            // ==========================
+            if (activeExerciseData.category === "squat") {
+                bodyParts.equipment.dumbbellCenter.visible = true;
+
+                const squatDepth = cycle * 0.38; // Pelvis descends
+                bodyParts.pelvis.position.y = 0.95 - squatDepth;
+                bodyParts.pelvis.position.z = -cycle * 0.12; // Hips move back
+
+                // Spine angle
+                if (isCorrectForm) {
+                    bodyParts.spine.rotation.x = cycle * 0.35; // Neutral torso lean ~20-25 deg
+                    // Knees track outward
+                    bodyParts.leftUpperLeg.rotation.x = -cycle * 1.35;
+                    bodyParts.leftUpperLeg.rotation.y = 0.15; // Outward
+                    bodyParts.leftLowerLeg.rotation.x = cycle * 1.45;
+
+                    bodyParts.rightUpperLeg.rotation.x = -cycle * 1.35;
+                    bodyParts.rightUpperLeg.rotation.y = -0.15; // Outward
+                    bodyParts.rightLowerLeg.rotation.x = cycle * 1.45;
+                } else {
+                    // MISTAKE FORM: Knee valgus (knees collapse inside) + severe lumbar rounding
+                    bodyParts.spine.rotation.x = cycle * 0.7; // Excessive lumbar flexion
+                    bodyParts.leftUpperLeg.rotation.x = -cycle * 1.25;
+                    bodyParts.leftUpperLeg.rotation.z = -cycle * 0.35; // Valgus inwards!
+                    bodyParts.leftLowerLeg.rotation.x = cycle * 1.3;
+
+                    bodyParts.rightUpperLeg.rotation.x = -cycle * 1.25;
+                    bodyParts.rightUpperLeg.rotation.z = cycle * 0.35; // Valgus inwards!
+                    bodyParts.rightLowerLeg.rotation.x = cycle * 1.3;
+                }
+
+                // Arms holding DB at sternum
+                bodyParts.leftUpperArm.rotation.x = 0.7;
+                bodyParts.leftUpperArm.rotation.z = -0.3;
+                bodyParts.leftForearm.rotation.x = -1.5;
+
+                bodyParts.rightUpperArm.rotation.x = 0.7;
+                bodyParts.rightUpperArm.rotation.z = 0.3;
+                bodyParts.rightForearm.rotation.x = -1.5;
+
+                // Attach center dumbbell to hands/sternum
+                bodyParts.equipment.dumbbellCenter.position.set(0, bodyParts.pelvis.position.y + 0.36, bodyParts.pelvis.position.z + 0.24);
+                trackerPos.copy(bodyParts.equipment.dumbbellCenter.position);
+            }
+
+            // ==========================
+            // EXERCISE B: LAT PULLDOWN
+            // ==========================
+            else if (activeExerciseData.category === "pulldown") {
+                bodyParts.equipment.pulldownBar.visible = true;
+
+                // Seated on bench
+                bodyParts.pelvis.position.set(0, 0.5, 0);
+                bodyParts.leftUpperLeg.rotation.x = -Math.PI / 2;
+                bodyParts.rightUpperLeg.rotation.x = -Math.PI / 2;
+                bodyParts.leftLowerLeg.rotation.x = Math.PI / 2;
+                bodyParts.rightLowerLeg.rotation.x = Math.PI / 2;
+
+                const pullCycle = 1.0 - cycle; // Pulled down at cycle=0
+
+                if (isCorrectForm) {
+                    bodyParts.spine.rotation.x = -0.18; // Stable slight arch 10 deg
+                    // Arms adduction
+                    bodyParts.leftUpperArm.rotation.z = 2.2 - pullCycle * 1.6;
+                    bodyParts.leftForearm.rotation.z = -pullCycle * 0.8;
+
+                    bodyParts.rightUpperArm.rotation.z = -2.2 + pullCycle * 1.6;
+                    bodyParts.rightForearm.rotation.z = pullCycle * 0.8;
+                } else {
+                    // MISTAKE: Severe momentum hyperextension (swinging back 45 degrees)
+                    bodyParts.spine.rotation.x = -pullCycle * 0.75;
+                    bodyParts.leftUpperArm.rotation.z = 2.2 - pullCycle * 1.4;
+                    bodyParts.rightUpperArm.rotation.z = -2.2 + pullCycle * 1.4;
+                }
+
+                // Bar position
+                const barY = 1.7 - pullCycle * 0.65;
+                bodyParts.equipment.pulldownBar.position.set(0, barY, 0.15 + (isCorrectForm ? 0 : -pullCycle * 0.2));
+                trackerPos.copy(bodyParts.equipment.pulldownBar.position);
+            }
+
+            // ==========================
+            // EXERCISE C: CHEST PRESS
+            // ==========================
+            else if (activeExerciseData.category === "press") {
+                // Seated on station
+                bodyParts.pelvis.position.set(0, 0.55, 0);
+                bodyParts.leftUpperLeg.rotation.x = -1.4;
+                bodyParts.rightUpperLeg.rotation.x = -1.4;
+                bodyParts.leftLowerLeg.rotation.x = 1.4;
+                bodyParts.rightLowerLeg.rotation.x = 1.4;
+
+                const pressCycle = 1.0 - cycle; // 1=extended, 0=retracted
+
+                if (isCorrectForm) {
+                    // Arms tucked at 45 degrees
+                    bodyParts.leftUpperArm.rotation.x = 0.4 + pressCycle * 0.8;
+                    bodyParts.leftUpperArm.rotation.z = -0.45;
+                    bodyParts.leftForearm.rotation.x = -1.2 + pressCycle * 1.1;
+
+                    bodyParts.rightUpperArm.rotation.x = 0.4 + pressCycle * 0.8;
+                    bodyParts.rightUpperArm.rotation.z = 0.45;
+                    bodyParts.rightForearm.rotation.x = -1.2 + pressCycle * 1.1;
+                } else {
+                    // MISTAKE: Flared 90 degrees elbows & shrugging
+                    bodyParts.leftUpperArm.rotation.x = 0.1 + pressCycle * 0.9;
+                    bodyParts.leftUpperArm.rotation.z = -1.4; // 90 deg flare
+                    bodyParts.leftForearm.rotation.x = -1.4 + pressCycle * 1.3;
+
+                    bodyParts.rightUpperArm.rotation.x = 0.1 + pressCycle * 0.9;
+                    bodyParts.rightUpperArm.rotation.z = 1.4; // 90 deg flare
+                    bodyParts.rightForearm.rotation.x = -1.4 + pressCycle * 1.3;
+                }
+
+                trackerPos.set(0, 0.85, 0.2 + pressCycle * 0.35);
+            }
+
+            // ==========================
+            // EXERCISE D: ROMANIAN DEADLIFT (RDL)
+            // ==========================
+            else if (activeExerciseData.category === "hinge") {
+                bodyParts.equipment.dumbbellCenter.visible = true;
+
+                const hinge = cycle * 0.8; // Hinge depth
+
+                if (isCorrectForm) {
+                    // Neutral spine, hips travel backward, knees soft fixed
+                    bodyParts.pelvis.position.z = -hinge * 0.32;
+                    bodyParts.pelvis.position.y = 0.95 - hinge * 0.08;
+                    bodyParts.leftUpperLeg.rotation.x = -0.2; // Soft knee fixed
+                    bodyParts.rightUpperLeg.rotation.x = -0.2;
+                    bodyParts.spine.rotation.x = hinge * 1.1; // Flat rigid spine hinge
+                } else {
+                    // MISTAKE: Cat-back lumbar rounding, hips don't push back
+                    bodyParts.pelvis.position.z = 0;
+                    bodyParts.spine.rotation.x = hinge * 1.4; // Spine folds, danger!
+                }
+
+                // Arms hanging straight down with dumbbells
+                bodyParts.leftUpperArm.rotation.x = -hinge * 0.8;
+                bodyParts.rightUpperArm.rotation.x = -hinge * 0.8;
+
+                bodyParts.equipment.dumbbellCenter.position.set(0, 0.8 - hinge * 0.45, 0.15 + bodyParts.pelvis.position.z);
+                trackerPos.copy(bodyParts.equipment.dumbbellCenter.position);
+            }
+
+            // ==========================
+            // EXERCISE E: OVERHEAD PRESS
+            // ==========================
+            else if (activeExerciseData.category === "overhead") {
+                bodyParts.equipment.dumbbellCenter.visible = true;
+
+                const press = 1.0 - cycle;
+
+                if (isCorrectForm) {
+                    bodyParts.spine.rotation.x = 0; // Neutral core
+                    bodyParts.leftUpperArm.rotation.x = 0.3;
+                    bodyParts.leftUpperArm.rotation.z = 0.5 + press * 1.8;
+                    bodyParts.leftForearm.rotation.x = -1.3 + press * 1.2;
+
+                    bodyParts.rightUpperArm.rotation.x = 0.3;
+                    bodyParts.rightUpperArm.rotation.z = -(0.5 + press * 1.8);
+                    bodyParts.rightForearm.rotation.x = -1.3 + press * 1.2;
+                } else {
+                    // MISTAKE: Excessive lumbar lordosis arch
+                    bodyParts.spine.rotation.x = -press * 0.45; // leaning backward
+                    bodyParts.leftUpperArm.rotation.z = 0.8 + press * 1.4;
+                    bodyParts.rightUpperArm.rotation.z = -(0.8 + press * 1.4);
+                }
+
+                bodyParts.equipment.dumbbellCenter.position.set(0, 1.4 + press * 0.45, 0.05);
+                trackerPos.copy(bodyParts.equipment.dumbbellCenter.position);
+            }
+
+            // Record 3D Trajectory Point
+            recordTrajectoryPoint(trackerPos);
+        }
+
+        function resetMannequinTransforms() {
+            bodyParts.pelvis.position.set(0, 0.95, 0);
+            bodyParts.pelvis.rotation.set(0, 0, 0);
+            bodyParts.spine.rotation.set(0, 0, 0);
+            bodyParts.chest.rotation.set(0, 0, 0);
+            bodyParts.leftUpperArm.rotation.set(0, 0, 0);
+            bodyParts.rightUpperArm.rotation.set(0, 0, 0);
+            bodyParts.leftForearm.rotation.set(0, 0, 0);
+            bodyParts.rightForearm.rotation.set(0, 0, 0);
+            bodyParts.leftUpperLeg.rotation.set(0, 0, 0);
+            bodyParts.rightUpperLeg.rotation.set(0, 0, 0);
+            bodyParts.leftLowerLeg.rotation.set(0, 0, 0);
+            bodyParts.rightLowerLeg.rotation.set(0, 0, 0);
+        }
+
+        function recordTrajectoryPoint(pos) {
+            if (!trajectoryLine || !document.getElementById('show-trajectory-cb').checked) {
+                trajectoryLine.visible = false;
+                return;
+            }
+            trajectoryLine.visible = true;
+
+            trajectoryHistory.push(pos.clone());
+            if (trajectoryHistory.length > 70) {
+                trajectoryHistory.shift();
+            }
+
+            const positions = trajectoryLine.geometry.attributes.position.array;
+            for (let i = 0; i < 70; i++) {
+                const pt = trajectoryHistory[i] || pos;
+                positions[i * 3] = pt.x;
+                positions[i * 3 + 1] = pt.y;
+                positions[i * 3 + 2] = pt.z;
+            }
+            trajectoryLine.geometry.attributes.position.needsUpdate = true;
+        }
+
+        /* =========================================================================
+           4. DYNAMIC MUSCLE HEATMAP RE-COLORING ENGINE
+           ========================================================================= */
+        function updateMuscleHeatMap() {
+            // Palette
+            const COLOR_PRIMARY = new THREE.Color(0xff4500);     // Neon Red/Orange
+            const COLOR_SECONDARY = new THREE.Color(0xeab308);   // Neon Amber/Gold
+            const COLOR_STABILIZER = new THREE.Color(0x06b6d4);  // Electric Cyan
+            const COLOR_INACTIVE = new THREE.Color(0x334155);    // Slate Carbon
+
+            // Reset all to inactive
+            Object.keys(bodyParts.muscles).forEach(key => {
+                bodyParts.muscles[key].forEach(mesh => {
+                    mesh.material.color.copy(COLOR_INACTIVE);
+                    mesh.material.emissive.setHex(0x000000);
+                });
+            });
+
+            const cat = activeExerciseData.category;
+
+            if (cat === "squat") {
+                setGroupColor('quads', COLOR_PRIMARY, 0.4);
+                setGroupColor('glutes', COLOR_PRIMARY, 0.4);
+                setGroupColor('hamstrings', COLOR_SECONDARY, 0.2);
+                setGroupColor('core', COLOR_STABILIZER, 0.15);
+            } else if (cat === "pulldown") {
+                setGroupColor('lats', COLOR_PRIMARY, 0.5);
+                setGroupColor('biceps', COLOR_SECONDARY, 0.3);
+                setGroupColor('deltoids', COLOR_STABILIZER, 0.15);
+            } else if (cat === "press") {
+                setGroupColor('chest', COLOR_PRIMARY, 0.5);
+                setGroupColor('triceps', COLOR_SECONDARY, 0.3);
+                setGroupColor('deltoids', COLOR_SECONDARY, 0.25);
+            } else if (cat === "hinge") {
+                setGroupColor('hamstrings', COLOR_PRIMARY, 0.5);
+                setGroupColor('glutes', COLOR_PRIMARY, 0.45);
+                setGroupColor('core', COLOR_SECONDARY, 0.25);
+                setGroupColor('lats', COLOR_STABILIZER, 0.15);
+            } else if (cat === "overhead") {
+                setGroupColor('deltoids', COLOR_PRIMARY, 0.5);
+                setGroupColor('triceps', COLOR_SECONDARY, 0.3);
+                setGroupColor('core', COLOR_STABILIZER, 0.2);
+            } else if (cat === "triceps") {
+                setGroupColor('triceps', COLOR_PRIMARY, 0.6);
+                setGroupColor('core', COLOR_STABILIZER, 0.15);
+            } else if (cat === "delts") {
+                setGroupColor('deltoids', COLOR_PRIMARY, 0.6);
+                setGroupColor('core', COLOR_STABILIZER, 0.15);
+            } else if (cat === "quad_iso") {
+                setGroupColor('quads', COLOR_PRIMARY, 0.65);
+            } else if (cat === "row") {
+                setGroupColor('lats', COLOR_PRIMARY, 0.5);
+                setGroupColor('biceps', COLOR_SECONDARY, 0.3);
+                setGroupColor('core', COLOR_STABILIZER, 0.2);
+            }
+        }
+
+        function setGroupColor(groupKey, color, emissiveStrength) {
+            if (bodyParts.muscles[groupKey]) {
+                bodyParts.muscles[groupKey].forEach(mesh => {
+                    mesh.material.color.copy(color);
+                    mesh.material.emissive.copy(color);
+                    mesh.material.emissiveIntensity = emissiveStrength;
+                });
+            }
+        }
+
+        /* =========================================================================
+           5. MAIN ANIMATION & RENDERING LOOP
+           ========================================================================= */
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            if (isPlaying) {
+                animProgress += delta * 0.45 * animSpeed;
+                if (animProgress > 1.0) animProgress -= 1.0;
+                document.getElementById('anim-scrubber').value = animProgress;
+            }
+
+            // Solve 3D Pose
+            updateKinematics(animProgress);
+
+            // Controls update
+            controls.update();
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            if (!container || !renderer || !camera) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        /* =========================================================================
+           6. UI CONTROLS & EVENT HANDLERS
+           ========================================================================= */
+        function setFormMode(isCorrect) {
+            isCorrectForm = isCorrect;
+            const correctBtn = document.getElementById('mode-correct-btn');
+            const mistakeBtn = document.getElementById('mode-mistake-btn');
+            const badge = document.getElementById('form-indicator-badge');
+            const modeTitle = document.getElementById('form-mode-title');
+            const warningBox = document.getElementById('mistake-warning-box');
+
+            if (isCorrect) {
+                correctBtn.className = "py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 bg-emerald-500 text-slate-950 shadow";
+                mistakeBtn.className = "py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-red-400 transition-all flex items-center justify-center space-x-1.5";
+                badge.style.borderLeftColor = "#10b981";
+                modeTitle.innerText = "DÜZGÜN BİOMEXANİKA";
+                modeTitle.className = "text-xs font-extrabold uppercase tracking-wider text-emerald-400";
+                warningBox.classList.add('hidden');
+            } else {
+                mistakeBtn.className = "py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 bg-red-500 text-white shadow";
+                correctBtn.className = "py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-emerald-400 transition-all flex items-center justify-center space-x-1.5";
+                badge.style.borderLeftColor = "#ef4444";
+                modeTitle.innerText = "KRİTİK SƏHV FORMA";
+                modeTitle.className = "text-xs font-extrabold uppercase tracking-wider text-red-400";
+                warningBox.classList.remove('hidden');
+            }
+
+            trajectoryHistory = []; // Reset trajectory
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            document.getElementById('icon-play').classList.toggle('hidden', isPlaying);
+            document.getElementById('icon-pause').classList.toggle('hidden', !isPlaying);
+        }
+
+        function restartAnimation() {
+            animProgress = 0;
+            trajectoryHistory = [];
+        }
+
+        function onScrub(val) {
+            isPlaying = false;
+            animProgress = parseFloat(val);
+            document.getElementById('icon-play').classList.remove('hidden');
+            document.getElementById('icon-pause').classList.add('hidden');
+        }
+
+        function setAnimSpeed(speed) {
+            animSpeed = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.className = "speed-btn px-2.5 py-1 text-xs rounded-xl font-bold text-slate-400 hover:text-white";
+            });
+            const activeBtnId = speed === 0.25 ? 'speed-025' : speed === 0.5 ? 'speed-05' : speed === 1.0 ? 'speed-10' : 'speed-15';
+            const activeEl = document.getElementById(activeBtnId);
+            if (activeEl) {
+                activeEl.className = "speed-btn px-2.5 py-1 text-xs rounded-xl font-bold bg-cyan-500 text-slate-950 shadow";
+            }
+        }
+
+        function setCameraView(preset) {
+            controls.autoRotate = false;
+            document.getElementById('btn-autorotate').classList.remove('bg-cyan-500', 'text-slate-950');
+            document.getElementById('btn-autorotate').classList.add('bg-cyan-950', 'text-cyan-400');
+
+            const target = new THREE.Vector3(0, 1.0, 0);
+            controls.target.copy(target);
+
+            if (preset === 'front') camera.position.set(0, 1.3, 3.4);
+            else if (preset === 'back') camera.position.set(0, 1.3, -3.4);
+            else if (preset === 'side') camera.position.set(3.4, 1.3, 0);
+            else if (preset === 'front45') camera.position.set(2.4, 1.5, 2.4);
+            else if (preset === 'back45') camera.position.set(2.4, 1.5, -2.4);
+            else if (preset === 'top') camera.position.set(0, 4.0, 0.1);
+        }
+
+        function toggleAutoRotate() {
+            controls.autoRotate = !controls.autoRotate;
+            const btn = document.getElementById('btn-autorotate');
+            if (controls.autoRotate) {
+                btn.classList.add('bg-cyan-500', 'text-slate-950');
+                btn.classList.remove('bg-cyan-950', 'text-cyan-400');
+            } else {
+                btn.classList.remove('bg-cyan-500', 'text-slate-950');
+                btn.classList.add('bg-cyan-950', 'text-cyan-400');
+            }
+        }
+
+        function resetCamera() {
+            setCameraView('front45');
+        }
+
+        function toggleTrajectory(show) {
+            if (trajectoryLine) trajectoryLine.visible = show;
+        }
+
+        /* =========================================================================
+           7. WORKOUT APP CONTROLLER (DAYS & EXERCISES POPULATION)
+           ========================================================================= */
+        let currentSelectedDay = "day1";
+
+        function populateDayButtons() {
+            const container = document.getElementById('day-buttons-container');
+            container.innerHTML = '';
+            ['day1', 'day2', 'day3', 'day4'].forEach((dayKey, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `py-2 text-xs font-bold rounded-xl transition ${dayKey === currentSelectedDay ? 'bg-cyan-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-400 hover:text-white'}`;
+                btn.innerText = `GÜN ${idx + 1}`;
+                btn.onclick = () => selectWorkoutDay(dayKey);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectWorkoutDay(dayKey) {
+            currentSelectedDay = dayKey;
+            populateDayButtons();
+
+            const dayObj = WORKOUT_DATA[dayKey];
+            document.getElementById('current-day-tag').innerText = dayObj.title;
+
+            // Populate Select Dropdown
+            const select = document.getElementById('exercise-select');
+            select.innerHTML = '';
+            dayObj.exercises.forEach(ex => {
+                const opt = document.createElement('option');
+                opt.value = ex.id;
+                opt.innerText = ex.name;
+                select.appendChild(opt);
+            });
+
+            // Load first exercise
+            loadExercise(dayObj.exercises[0]);
+        }
+
+        function onExerciseSelectChange(exId) {
+            const dayObj = WORKOUT_DATA[currentSelectedDay];
+            const found = dayObj.exercises.find(e => e.id === exId) || dayObj.exercises[0];
+            loadExercise(found);
+        }
+
+        function loadExercise(exData) {
+            activeExerciseData = exData;
+            activeExerciseId = exData.id;
+
+            document.getElementById('current-exercise-title').innerText = exData.name;
+            document.getElementById('current-exercise-tempo').innerText = `Tempo: ${exData.tempo}`;
+            document.getElementById('exercise-sets-reps').innerText = exData.setsReps;
+            document.getElementById('exercise-rir-info').innerText = `Hədəf RIR: ${exData.rirInfo}`;
+
+            // Heatmap labels
+            document.getElementById('primary-muscles-text').innerText = exData.primary;
+            document.getElementById('secondary-muscles-text').innerText = exData.secondary;
+            document.getElementById('stabilizer-muscles-text').innerText = exData.stabilizers;
+            document.getElementById('primary-muscle-percent').innerText = `${exData.primaryPct} Aktivlik`;
+            document.getElementById('secondary-muscle-percent').innerText = `${exData.secondaryPct} Aktivlik`;
+            document.getElementById('stabilizer-muscle-percent').innerText = `${exData.stabilizerPct} İzometrik`;
+
+            // Cues
+            const cuesList = document.getElementById('biomechanics-cues-list');
+            cuesList.innerHTML = '';
+            exData.cues.forEach(cue => {
+                const li = document.createElement('li');
+                li.className = "flex items-start space-x-2";
+                li.innerHTML = `<span class="text-cyan-400 font-bold shrink-0">✓</span><span>${cue}</span>`;
+                cuesList.appendChild(li);
+            });
+
+            // Mistakes
+            document.getElementById('mistake-title').innerText = exData.mistakeTitle;
+            document.getElementById('mistake-desc').innerText = exData.mistakeDesc;
+
+            // Re-trigger color mapping in 3D
+            updateMuscleHeatMap();
+            trajectoryHistory = [];
+            restartAnimation();
+        }
+
+        function loadExerciseFromCard(exId) {
+            switchMainTab('simulator');
+            // Search in all days
+            for (const dayKey of ['day1', 'day2', 'day3', 'day4']) {
+                const found = WORKOUT_DATA[dayKey].exercises.find(e => e.id === exId);
+                if (found) {
+                    selectWorkoutDay(dayKey);
+                    document.getElementById('exercise-select').value = exId;
+                    loadExercise(found);
+                    break;
+                }
+            }
+        }
+
+        /* =========================================================================
+           8. TAB NAVIGATION
+           ========================================================================= */
+        function switchMainTab(tabKey) {
+            const tabs = ['simulator', 'calendar', 'audit', 'tracker'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`tab-content-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabKey) {
+                    content.classList.remove('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg transition-all flex items-center space-x-2 bg-cyan-500 text-slate-950 font-bold shadow";
+                } else {
+                    content.classList.add('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center space-x-2";
+                }
+            });
+            if (tabKey === 'simulator') {
+                setTimeout(onWindowResize, 50);
+            }
+        }
+
+        /* =========================================================================
+           9. LIVE WORKOUT REST TIMER & SOUND SYNTHESIS
+           ========================================================================= */
+        let timerDuration = 90;
+        let timerRemaining = 90;
+        let timerInterval = null;
+        let isTimerActive = false;
+
+        // Web Audio Synthesizer Beep (No External Assets)
+        function playBeep(freq = 600, duration = 0.15) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) { }
+        }
+
+        function startRestTimer(seconds) {
+            clearInterval(timerInterval);
+            timerDuration = seconds;
+            timerRemaining = seconds;
+            isTimerActive = true;
+            updateTimerDisplay();
+            document.getElementById('timer-toggle-btn').innerText = "Taymeri Dayandır";
+
+            timerInterval = setInterval(() => {
+                timerRemaining--;
+                updateTimerDisplay();
+
+                // Audio Cues at 3, 2, 1 seconds
+                if (timerRemaining <= 3 && timerRemaining > 0) {
+                    playBeep(440, 0.1);
+                } else if (timerRemaining === 0) {
+                    playBeep(880, 0.4);
+                    clearInterval(timerInterval);
+                    isTimerActive = false;
+                    document.getElementById('timer-toggle-btn').innerText = "Yenidən Başlat";
+                }
+            }, 1000);
+        }
+
+        function toggleTimerRunning() {
+            if (isTimerActive) {
+                clearInterval(timerInterval);
+                isTimerActive = false;
+                document.getElementById('timer-toggle-btn').innerText = "Davam etdir";
+            } else {
+                if (timerRemaining <= 0) timerRemaining = timerDuration;
+                startRestTimer(timerRemaining);
+            }
+        }
+
+        function resetRestTimer() {
+            clearInterval(timerInterval);
+            isTimerActive = false;
+            timerRemaining = timerDuration;
+            updateTimerDisplay();
+            document.getElementById('timer-toggle-btn').innerText = "Taymeri Başlat";
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerRemaining / 60);
+            const secs = timerRemaining % 60;
+            document.getElementById('rest-timer-display').innerText =
+                `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function markSetComplete(btn) {
+            btn.className = "p-2 rounded-xl bg-emerald-500 text-black transition shadow-[0_0_12px_#10b981]";
+            startRestTimer(90); // Auto-start 90s rest timer upon logging set!
+        }
+
+        /* =========================================================================
+           10. BOOTSTRAP APPLICATION
+           ========================================================================= */
+        window.onload = function () {
+            init3D();
+            populateDayButtons();
+            selectWorkoutDay('day1');
+            setCameraView('front45');
+        };
+    </script>
+</body>
+
+</html>

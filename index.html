@@ -1,0 +1,3298 @@
+<!DOCTYPE html>
+<html lang="az" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX BIO 3D // Çoxfunksiyalı Məşq Stansiyası & 4-Günlük Fərdi Proqram</title>
+    <meta name="description"
+        content="Ev multi-gym stansiyası və sərbəst çəkilər üçün canlı insan anatomiyası, dəqiq 3D biomexanika və 4-günlük həftəlik məşq proqramı.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Three.js r128 & OrbitControls CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-base: #0a0e18;
+            --bg-surface: #111827;
+            --bg-card: #1a2236;
+            --bg-elevated: #222d44;
+            --border-subtle: rgba(148, 163, 184, 0.12);
+            --border-active: rgba(56, 189, 248, 0.45);
+            --accent-cyan: #38bdf8;
+            --accent-emerald: #34d399;
+            --accent-rose: #fb7185;
+            --accent-amber: #fbbf24;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --glow-cyan: 0 0 30px -8px rgba(56, 189, 248, 0.4);
+            --glow-emerald: 0 0 30px -8px rgba(52, 211, 153, 0.4);
+            --glow-rose: 0 0 30px -8px rgba(251, 113, 133, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+        }
+
+        .glass-elevated {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+        }
+
+        /* ---- HEADER ---- */
+        header {
+            height: 60px;
+            flex-shrink: 0;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 30;
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .brand-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: linear-gradient(135deg, #38bdf8, #34d399);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 11px; color: #0a0e18;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+        }
+        .brand-title { font-weight: 800; font-size: 15px; letter-spacing: -0.3px; }
+        .brand-title span { color: var(--accent-cyan); }
+        .brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); }
+
+        /* Day Tabs */
+        .day-tabs {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--bg-base); border-radius: 14px;
+            padding: 4px; border: 1px solid var(--border-subtle);
+        }
+        .day-tab {
+            padding: 8px 14px; border-radius: 10px; border: none;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
+            color: var(--text-muted); background: transparent;
+        }
+        .day-tab:hover { color: var(--text-primary); }
+        .day-tab.active {
+            background: var(--accent-cyan); color: #0a0e18;
+            box-shadow: 0 2px 12px rgba(56, 189, 248, 0.35);
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex; gap: 4px; background: var(--bg-base);
+            border-radius: 12px; padding: 3px; border: 1px solid var(--border-subtle);
+        }
+        .mode-btn {
+            padding: 6px 12px; border-radius: 9px; border: none;
+            font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .mode-btn .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .mode-correct-active { background: var(--accent-emerald); color: #0a0e18; }
+        .mode-correct-active .dot { background: #0a0e18; }
+        .mode-correct-inactive { background: transparent; color: var(--text-muted); }
+        .mode-correct-inactive .dot { background: var(--accent-emerald); opacity: 0.5; }
+        .mode-mistake-active { background: var(--accent-rose); color: #0a0e18; }
+        .mode-mistake-active .dot { background: #0a0e18; }
+        .mode-mistake-inactive { background: transparent; color: var(--text-muted); }
+        .mode-mistake-inactive .dot { background: var(--accent-rose); opacity: 0.5; }
+
+        /* ---- MAIN ---- */
+        main {
+            flex: 1; position: relative; width: 100%;
+            overflow: hidden; background: var(--bg-base);
+        }
+        #three-hero-viewport { width: 100%; height: 100%; cursor: grab; }
+        #three-hero-viewport:active { cursor: grabbing; }
+
+        /* ---- LEFT HUD ---- */
+        .left-hud {
+            position: absolute; top: 16px; left: 16px; z-index: 20;
+            width: 340px; display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .left-hud > * { pointer-events: auto; }
+
+        .day-card {
+            padding: 16px; border-left: 3px solid var(--accent-cyan);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .day-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 10px;
+        }
+        .day-badge {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .day-title { font-size: 14px; font-weight: 800; color: var(--text-primary); margin-top: 2px; }
+        .day-duration {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            padding: 3px 8px; border-radius: 8px;
+            background: var(--bg-elevated); color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .exercise-list { display: flex; flex-direction: column; gap: 6px; }
+        .exercise-item {
+            padding: 10px 12px; border-radius: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid transparent; transition: all 0.2s ease;
+            background: rgba(17, 24, 39, 0.6);
+        }
+        .exercise-item:hover { background: var(--bg-elevated); border-color: var(--border-subtle); }
+        .exercise-item.active {
+            background: rgba(56, 189, 248, 0.08); border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px -8px rgba(56, 189, 248, 0.3);
+        }
+        .exercise-item .num {
+            width: 24px; height: 24px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            background: var(--bg-elevated); color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .exercise-item.active .num { background: var(--accent-cyan); color: #0a0e18; }
+        .exercise-item .info { flex: 1; margin-left: 10px; }
+        .exercise-item .name { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+        .exercise-item .cat {
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
+            color: var(--text-muted); margin-top: 1px;
+        }
+        .exercise-item .type-badge {
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
+            font-weight: 700; padding: 2px 8px; border-radius: 6px;
+        }
+        .type-station { background: rgba(52, 211, 153, 0.12); color: var(--accent-emerald); border: 1px solid rgba(52, 211, 153, 0.25); }
+        .type-dumbbell { background: rgba(148, 163, 184, 0.08); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+        .muscle-info {
+            padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: 6px;
+        }
+        .muscle-label {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            color: var(--text-muted); display: flex; justify-content: space-between;
+        }
+        .muscle-value { font-weight: 700; color: var(--accent-emerald); }
+        .exercise-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-top: 6px; }
+
+        /* ---- RIGHT HUD ---- */
+        .right-hud {
+            position: absolute; top: 16px; right: 16px; z-index: 20;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+            pointer-events: none;
+        }
+        .right-hud > * { pointer-events: auto; }
+
+        .telemetry-pill {
+            display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .telem-group { display: flex; align-items: center; gap: 6px; }
+        .telem-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-cyan); animation: pulse 2s infinite; }
+        .telem-label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .telem-value { font-weight: 700; color: var(--accent-cyan); }
+        .telem-sep { color: rgba(255,255,255,0.15); }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .cam-presets {
+            display: flex; gap: 4px; padding: 4px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .cam-btn {
+            padding: 6px 12px; border-radius: 8px; border: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
+            color: var(--text-muted); background: transparent;
+        }
+        .cam-btn:hover { color: var(--text-primary); }
+        .cam-btn.active { background: var(--accent-cyan); color: #0a0e18; }
+        .cam-btn-orbit {
+            padding: 6px 12px; border-radius: 8px;
+            border: 1px solid var(--border-subtle); background: var(--bg-elevated);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease; color: var(--text-secondary);
+        }
+        .cam-btn-orbit:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .cam-btn-orbit.active { background: var(--accent-cyan); color: #0a0e18; border-color: var(--accent-cyan); }
+
+        /* ---- MISTAKE ALERT ---- */
+        .mistake-alert {
+            display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 25; max-width: 480px; width: calc(100% - 32px);
+            padding: 14px 18px; border-radius: 16px;
+            background: rgba(127, 29, 29, 0.85); border: 1px solid rgba(251, 113, 133, 0.35);
+            border-left: 3px solid var(--accent-rose);
+            box-shadow: var(--glow-rose), 0 8px 32px rgba(0,0,0,0.4);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .mistake-alert.visible { display: flex; }
+        .mistake-alert .icon-box {
+            width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+            background: rgba(251, 113, 133, 0.15); border: 1px solid rgba(251, 113, 133, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent-rose); font-size: 16px;
+        }
+        .mistake-alert .alert-content { margin-left: 12px; flex: 1; }
+        .mistake-alert .alert-title {
+            font-size: 11px; font-weight: 800; color: #fca5a5;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .mistake-alert .alert-risk {
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
+            padding: 2px 6px; border-radius: 4px;
+            background: rgba(251, 113, 133, 0.15); color: #fca5a5;
+            border: 1px solid rgba(251, 113, 133, 0.25);
+        }
+        .mistake-alert .alert-desc { font-size: 11px; color: #e2e8f0; margin-top: 4px; line-height: 1.5; }
+
+        /* ---- BOTTOM CONTROLS ---- */
+        .bottom-controls {
+            position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 20;
+            display: flex; flex-direction: column; gap: 8px;
+            max-width: 680px; margin: 0 auto; pointer-events: none;
+        }
+        .bottom-controls > * { pointer-events: auto; }
+
+        .cues-strip {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px; font-size: 11px;
+        }
+        .cues-icon { color: var(--accent-cyan); font-weight: 800; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+        .cues-icon .star { font-size: 14px; }
+        .cues-content { flex: 1; overflow: hidden; color: var(--text-secondary); white-space: nowrap; text-overflow: ellipsis; }
+        .cues-expand {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            color: var(--accent-cyan); background: none; border: none;
+            cursor: pointer; white-space: nowrap; text-transform: uppercase; font-weight: 700;
+        }
+        .cues-expand:hover { text-decoration: underline; }
+
+        .scrubber-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .play-btn {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: var(--accent-cyan); color: #0a0e18; border: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+            transition: all 0.15s ease; flex-shrink: 0;
+        }
+        .play-btn:hover { transform: scale(1.05); }
+        .play-btn:active { transform: scale(0.95); }
+
+        .phase-info { display: flex; flex-direction: column; flex-shrink: 0; }
+        .phase-label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .phase-value { font-size: 11px; font-weight: 800; color: var(--accent-cyan); }
+
+        .slider-wrap { flex: 1; display: flex; align-items: center; }
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 5px; border-radius: 3px;
+            background: linear-gradient(90deg, rgba(56,189,248,0.3), rgba(52,211,153,0.3));
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%;
+            background: var(--accent-cyan); cursor: pointer;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+            margin-top: -7px; transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .speed-btns { display: flex; gap: 4px; flex-shrink: 0; }
+        .speed-btn {
+            padding: 5px 10px; border-radius: 8px; border: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
+            background: var(--bg-elevated); color: var(--text-muted);
+        }
+        .speed-btn:hover { color: var(--text-primary); }
+        .speed-btn.active { background: var(--accent-cyan); color: #0a0e18; }
+
+        /* ---- MODAL ---- */
+        .modal-overlay {
+            display: none; position: absolute; inset: 0; z-index: 40;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            padding: 24px; max-width: 440px; width: 100%;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: var(--glow-cyan), 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;
+        }
+        .modal-title { font-size: 15px; font-weight: 800; }
+        .modal-close {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: var(--bg-elevated); border: none; color: var(--text-muted);
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-cues { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .modal-cue {
+            padding: 12px; border-radius: 12px; background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .cue-num {
+            width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+            background: rgba(56, 189, 248, 0.12); color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cue-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+        .modal-return {
+            width: 100%; padding: 12px; border-radius: 12px;
+            background: var(--accent-cyan); color: #0a0e18; border: none;
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+        }
+        .modal-return:hover { filter: brightness(1.1); }
+
+        /* Scrollbar hide */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ---- MOBILE / TABLET RESPONSIVE ---- */
+        .mode-toggle.compact { display: none; }
+
+        @media (max-width: 1280px) {
+            .left-hud { width: 320px; }
+        }
+        @media (max-width: 1024px) {
+            .left-hud { width: 300px; top: 12px; left: 12px; }
+            .right-hud { top: 12px; right: 12px; }
+            .telemetry-pill { font-size: 10px; padding: 8px 12px; gap: 10px; }
+            .mode-toggle { display: flex; transform: scale(0.9); transform-origin: right center; }
+        }
+        @media (max-width: 768px) {
+            header { padding: 0 12px; height: 56px; }
+            .brand-title { font-size: 13px; }
+            .brand-sub { display: none; }
+            .day-tabs { flex-wrap: wrap; gap: 3px; padding: 3px; }
+            .day-tab { padding: 6px 10px; font-size: 11px; }
+            .left-hud { width: 260px; }
+            .left-hud .day-card { padding: 12px; }
+            .mode-toggle { display: flex; transform: scale(0.85); }
+            .mode-btn { padding: 5px 10px; font-size: 10px; }
+            .right-hud { gap: 6px; }
+            .cam-presets { flex-wrap: wrap; max-width: 220px; }
+            .cam-btn { padding: 5px 10px; font-size: 10px; }
+            .bottom-controls { left: 8px; right: 8px; bottom: 8px; }
+            .cues-strip { padding: 8px 12px; font-size: 10px; }
+            .mistake-alert { max-width: calc(100% - 24px); top: 70px; }
+        }
+        @media (max-width: 600px) {
+            .day-tab { padding: 5px 8px; font-size: 10px; }
+        }
+        @media (max-width: 480px) {
+            .left-hud {
+                width: calc(100vw - 24px);
+                top: auto; bottom: 130px; left: 12px; right: 12px;
+                max-height: 35vh; overflow-y: auto;
+            }
+            .left-hud.collapsed .day-card { padding: 10px 12px; }
+            .left-hud.collapsed .exercise-list,
+            .left-hud.collapsed .muscle-info { display: none; }
+            .mode-toggle { transform: scale(0.78); }
+            .right-hud { top: 70px; }
+            .cam-presets { max-width: 180px; }
+            .scrubber-bar { padding: 8px 12px; flex-wrap: wrap; }
+            .slider-wrap { order: 99; flex-basis: 100%; }
+            .phase-info { font-size: 9px; }
+            .rep-counter-pill, .rest-timer-pill { padding: 6px 10px; font-size: 10px; }
+        }
+
+        /* ---- REP COUNTER & REST TIMER ---- */
+        .rep-counter-pill, .rest-timer-pill {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; font-weight: 700;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .rep-counter-pill { background: var(--bg-card); border: 1px solid var(--border-subtle); }
+        .rep-counter-pill .label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; }
+        .rep-counter-pill .value { color: var(--accent-emerald); font-size: 14px; }
+        .rep-counter-pill .target { color: var(--text-muted); font-size: 10px; }
+        .rest-timer-pill { background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); }
+        .rest-timer-pill.active { animation: pulse-rest 1s infinite; }
+        .rest-timer-pill .label { color: var(--accent-amber); font-size: 9px; text-transform: uppercase; }
+        .rest-timer-pill .value { color: var(--accent-amber); font-size: 14px; }
+        .rest-timer-pill .icon { font-size: 12px; }
+        @keyframes pulse-rest { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* ---- 3D INJURY LABEL SPRITE (CSS for canvas) ---- */
+        .audio-toggle-btn {
+            padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated); color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease; text-transform: uppercase;
+        }
+        .audio-toggle-btn:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
+        .audio-toggle-btn.muted { color: var(--text-muted); opacity: 0.6; }
+    </style>
+</head>
+
+<body>
+
+    <!-- ======== HEADER ======== -->
+    <header>
+        <div class="brand" onclick="resetView()">
+            <div class="brand-icon">3D</div>
+            <div>
+                <div class="brand-title">APEX<span>BIO</span></div>
+                <div class="brand-sub">Fərdi 4-Günlük Stansiya Planı & Biomexanika</div>
+            </div>
+        </div>
+
+        <div class="day-tabs">
+            <button onclick="switchDay(0)" id="tab-day-0" class="day-tab active">GÜN 1: İtələmə</button>
+            <button onclick="switchDay(1)" id="tab-day-1" class="day-tab">GÜN 2: Çəkmə</button>
+            <button onclick="switchDay(2)" id="tab-day-2" class="day-tab">GÜN 3: Ayaq & Baza</button>
+            <button onclick="switchDay(3)" id="tab-day-3" class="day-tab">GÜN 4: Üst Bədən</button>
+        </div>
+
+        <div class="mode-toggle">
+            <button onclick="setTechniqueMode('correct')" id="mode-btn-correct" class="mode-btn mode-correct-active">
+                <span class="dot"></span>Düzgün Forma
+            </button>
+            <button onclick="setTechniqueMode('mistake')" id="mode-btn-mistake" class="mode-btn mode-mistake-inactive">
+                <span class="dot"></span>Tipik Səhv
+            </button>
+        </div>
+    </header>
+
+    <!-- ======== MAIN 3D STAGE ======== -->
+    <main>
+        <div id="three-hero-viewport"></div>
+
+        <!-- LEFT HUD -->
+        <div class="left-hud">
+            <div class="glass-panel day-card">
+                <div class="day-card-header">
+                    <div>
+                        <div class="day-badge" id="day-badge-subtitle">GÜN 1 • 4 MƏŞQ</div>
+                        <div class="day-title" id="day-badge-title">İtələmə & Ön Zəncir</div>
+                    </div>
+                    <span class="day-duration">~45 Dəq</span>
+                </div>
+                <div class="exercise-list" id="daily-exercise-list"></div>
+                <div class="muscle-info">
+                    <div class="muscle-label">
+                        <span>HƏDƏF ƏZƏLƏ:</span>
+                        <span class="muscle-value" id="badge-primary-muscle">Pectoralis Major</span>
+                    </div>
+                    <p class="exercise-desc" id="hud-exercise-desc">
+                        Stansiyanın dəstəklərini irəli itələyərək döş əzələlərini tam sıxın.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT HUD -->
+        <div class="right-hud">
+            <div class="glass-panel telemetry-pill">
+                <div class="telem-group">
+                    <span class="telem-dot"></span>
+                    <span class="telem-label" id="telemetry-label-1">Dirsək:</span>
+                    <span class="telem-value" id="telemetry-val-1">115°</span>
+                </div>
+                <span class="telem-sep">│</span>
+                <div class="telem-group">
+                    <span class="telem-label" id="telemetry-label-2">Çiyin:</span>
+                    <span class="telem-value" id="telemetry-val-2" style="color: var(--accent-emerald)">55°</span>
+                </div>
+                <span class="telem-sep">│</span>
+                <div class="telem-group">
+                    <span class="telem-label" id="telemetry-label-3">Kürək:</span>
+                    <span class="telem-value" id="telemetry-val-3" style="color: var(--text-primary)">Sabit</span>
+                </div>
+            </div>
+
+            <div class="rep-counter-pill">
+                <span class="label">REP</span>
+                <span class="value" id="rep-counter-value">0</span>
+                <span class="target">/ <span id="rep-counter-target">10</span></span>
+                <button class="audio-toggle-btn" id="audio-toggle-btn" onclick="toggleAudio()" title="Metronom">♪ ON</button>
+            </div>
+
+            <div class="rest-timer-pill" id="rest-timer-pill">
+                <span class="icon">⏱</span>
+                <span class="label">İSTİRAHƏT</span>
+                <span class="value" id="rest-timer-value">00:00</span>
+            </div>
+
+            <div class="cam-presets">
+                <button onclick="setCameraView('hero')" id="cam-btn-hero" class="cam-btn active">45° Baxış</button>
+                <button onclick="setCameraView('front')" id="cam-btn-front" class="cam-btn">Ön</button>
+                <button onclick="setCameraView('side')" id="cam-btn-side" class="cam-btn">Profil</button>
+                <button onclick="toggleOrbit()" id="cam-btn-orbit" class="cam-btn-orbit">⟳ 360°</button>
+            </div>
+        </div>
+
+        <!-- MISTAKE ALERT -->
+        <div id="mistake-alert-card" class="mistake-alert">
+            <div class="icon-box">⚠</div>
+            <div class="alert-content">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <span class="alert-title" id="mistake-card-title">Kritik Xəta</span>
+                    <span class="alert-risk">ZƏDƏ RİSKİ</span>
+                </div>
+                <p class="alert-desc" id="mistake-card-desc"></p>
+            </div>
+        </div>
+
+        <!-- BOTTOM CONTROLS -->
+        <div class="bottom-controls">
+            <div class="glass-panel cues-strip">
+                <div class="cues-icon"><span class="star">✦</span> 3 Qızıl Qayda:</div>
+                <div class="cues-content" id="cues-preview-container"></div>
+                <button class="cues-expand" onclick="toggleCuesModal()">Hamısı ↗</button>
+            </div>
+
+            <div class="glass-panel scrubber-bar">
+                <button onclick="togglePlayPause()" id="play-pause-btn" class="play-btn">
+                    <span id="icon-pause">❚❚</span>
+                    <span id="icon-play" style="display:none">▶</span>
+                </button>
+                <div class="phase-info">
+                    <span class="phase-label">FAZA:</span>
+                    <span class="phase-value" id="motion-phase-badge">Konsentrik</span>
+                </div>
+                <div class="slider-wrap">
+                    <input type="range" id="motion-scrubber" min="0" max="1" step="0.001" value="0"
+                        oninput="onScrubInput(this.value)">
+                </div>
+                <div class="speed-btns">
+                    <button onclick="setMotionSpeed(0.5)" id="speed-05" class="speed-btn">0.5x</button>
+                    <button onclick="setMotionSpeed(1.0)" id="speed-10" class="speed-btn active">1.0x</button>
+                    <button onclick="setMotionSpeed(1.5)" id="speed-15" class="speed-btn">1.5x</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUES MODAL -->
+        <div id="cues-modal" class="modal-overlay">
+            <div class="glass-elevated modal-box">
+                <div class="modal-header">
+                    <div class="modal-title" id="modal-cues-title">Məşq Təlimatları</div>
+                    <button class="modal-close" onclick="toggleCuesModal()">✕</button>
+                </div>
+                <div class="modal-cues" id="modal-cues-list"></div>
+                <button class="modal-return" onclick="toggleCuesModal()">Məşqə Qayıt</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ======== JAVASCRIPT ======== -->
+    <script>
+        /* =========================================================================
+           0. THREE.JS R128 COMPATIBILITY POLYFILLS
+           ========================================================================= */
+        if (typeof THREE !== 'undefined' && !THREE.CapsuleGeometry) {
+            THREE.CapsuleGeometry = function(radius = 1, length = 1, capSegments = 4, radialSegments = 8) {
+                const points = [];
+                for (let i = 0; i <= capSegments; i++) {
+                    const theta = (Math.PI / 2) * (i / capSegments) - Math.PI / 2;
+                    points.push(new THREE.Vector2(radius * Math.cos(theta), -length / 2 + radius * Math.sin(theta)));
+                }
+                for (let i = 0; i <= capSegments; i++) {
+                    const theta = (Math.PI / 2) * (i / capSegments);
+                    points.push(new THREE.Vector2(radius * Math.cos(theta), length / 2 + radius * Math.sin(theta)));
+                }
+                return new THREE.LatheGeometry(points, radialSegments);
+            };
+            THREE.CapsuleGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
+        }
+
+        /* =========================================================================
+           1. 4-DAY COMPREHENSIVE WORKOUT PLAN
+           ========================================================================= */
+        const WORKOUT_PROGRAM = [
+            {
+                dayId: "day_1",
+                dayTitle: "GÜN 1",
+                daySubtitle: "İtələmə (Push — Döş / Çiyin / Triceps)",
+                exercises: ["station_chest_press", "station_pec_fly", "dumbbell_shoulder_press", "station_triceps_pushdown"]
+            },
+            {
+                dayId: "day_2",
+                dayTitle: "GÜN 2",
+                daySubtitle: "Çəkmə (Pull — Kürək / Biceps)",
+                exercises: ["station_lat_pulldown", "station_seated_row", "dumbbell_biceps_curl", "dumbbell_hammer_curl"]
+            },
+            {
+                dayId: "day_3",
+                dayTitle: "GÜN 3",
+                daySubtitle: "Ayaq & Baza (Legs — Quad / Hamstring / Glute)",
+                exercises: ["goblet_squat", "station_leg_extension", "dumbbell_rdl", "dumbbell_walking_lunge"]
+            },
+            {
+                dayId: "day_4",
+                dayTitle: "GÜN 4",
+                daySubtitle: "Üst Bədən İxtisaslaşması (Upper Volume)",
+                exercises: ["station_chest_press", "dumbbell_lateral_raise", "station_lat_pulldown", "dumbbell_hammer_curl"]
+            }
+        ];
+
+        const EXERCISES = {
+            station_chest_press: {
+                id: "station_chest_press", name: "Stansiyada Chest Press", type: "station",
+                category: "Döş & Pectoralis",
+                primaryMuscle: "Pectoralis Major (Böyük Sinə)",
+                desc: "Stansiyanın oturacağına oturub kürəyi arxalığa möhkəm sıxın. Dəstəkləri sinə səviyyəsindən bərabər şəkildə qabağa itələyin.",
+                telemetryLabels: ["Dirsək Açılışı", "Çiyin Meyli", "Kürək Sabitliyi"],
+                cues: [
+                    "Kürək qanadlarını stansiyanın arxalığına tam sıxın və hərəkət boyu geri çəkilmiş saxlayın.",
+                    "Dirsəkləri 90° çiyin oxunda yox, gövdə ilə 45-60° bucaq altında açaraq itələyin.",
+                    "İtələmənin sonunda dirsəkləri sərt bağlayıb zərbə yaratmayın."
+                ],
+                mistakeTitle: "Kritik Xəta: Dirsəklərin 90° Çiyin Xəttində Açılması",
+                mistakeDesc: "Dirsəkləri 90° yanlara açaraq itələmək subakromial boşluğu daraldır və rotator manjet bağlarını sümük arasında əzərək xroniki iltihab yaradır.",
+                restSeconds: 90,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.25, 1.45, 0.10], label: "Rotator Manjet", risk: "Subakromial İltihab" },
+                    { pos: [-0.25, 1.45, 0.10], label: "Rotator Manjet", risk: "Subakromial İltihab" }
+                ]
+            },
+            station_lat_pulldown: {
+                id: "station_lat_pulldown", name: "Stansiyada Lat Pulldown", type: "station",
+                category: "Kürək & Latissimus",
+                primaryMuscle: "Latissimus Dorsi (Qanadlar Əzələsi)",
+                desc: "Stansiyanın yuxarı blokundakı geniş lat çubuğunu çiyinlərdən enli tutun. Çubuğu körpücük sümüyünə doğru endirin.",
+                telemetryLabels: ["Dirsək Dartılışı", "Gövdə Meyli", "Kürək Sıxılması"],
+                cues: [
+                    "Hərəkəti qollarla yox, kürək qanadlarını aşağı və arxaya sıxaraq başlayın.",
+                    "Gövdənizi arxaya yelləyib inersiya yaratmayın; təkcə kürək əzələlərini işlədin.",
+                    "Dəstəyi sinənin yuxarı hissəsinə toxundurub 1 saniyəlik zirvə yığılması tətbiq edin."
+                ],
+                mistakeTitle: "Kritik Xəta: Gövdə ilə Arxaya Yellənmək",
+                mistakeDesc: "Beli yelləyərək inersiya ilə çəkmək fəqərələri zədələyir və latissimus dorsi əzələsinin yükünü oğurlayır.",
+                restSeconds: 90,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.00, 0.85, 0.20], label: "Bel L3-L4", risk: "Onurğa Disk Yırtığı" }
+                ]
+            },
+            station_leg_extension: {
+                id: "station_leg_extension", name: "Stansiyada Leg Extension", type: "station",
+                category: "Ayaq & Kvadriseps",
+                primaryMuscle: "Quadriceps (Dördbaşlı Bud Əzələsi)",
+                desc: "Oturacaqda əyləşin, baldırları aşağı köpük diyircəklərinin altına keçirin. Diz oynağından ayaqları tam düzələnə qədər qaldırın.",
+                telemetryLabels: ["Diz Bucağı", "Kvadriseps Sıxılması", "Omba Sabitliyi"],
+                cues: [
+                    "Çanağın oturacaqdan qalxmasına imkan verməyin; yan tutacaqlardan bərk yapışın.",
+                    "Qaldırarkən ayaq barmaqlarınızı özünüzə doğru çəkin (dorsifleksiya).",
+                    "Enmə zamanı ağırlığın dərhal düşməsinə icazə verməyin; 2 saniyəlik nəzarətli eksentrik edin."
+                ],
+                mistakeTitle: "Kritik Xəta: Zərbə ilə Qaldırmaq",
+                mistakeDesc: "Ayağı inersiya ilə tullamaq diz qapağı bağlarına kəskin zərbə təzyiqi vurur.",
+                restSeconds: 75,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.10, 0.50, 0.65], label: "Diz Patella", risk: "Patellar Tendinit" },
+                    { pos: [-0.10, 0.50, 0.65], label: "Diz Patella", risk: "Patellar Tendinit" }
+                ]
+            },
+            station_pec_fly: {
+                id: "station_pec_fly", name: "Stansiyada Pec Deck Fly (Kəpənək)", type: "station",
+                category: "Döş İzolyasiyası",
+                primaryMuscle: "Pectoralis Major (İç Liflər)",
+                desc: "Stansiyanın kəpənək qollarını dirsəklərinizlə yanlardan tutun. Qolları qarşınızda birləşdirərək sinənizi sıxın.",
+                telemetryLabels: ["Qol Sıxılması", "Dirsək Bucağı", "Sinə Yığılması"],
+                cues: [
+                    "Dirsəkləri tam bağlamayın — hərəkət boyu 30° bükülmə saxlayın.",
+                    "Yalnız sinə ilə sıxın; çiyinləri və trapesi istifadə etməyin.",
+                    "Zirvədə 1 saniyəlik pauza edərək əzələ bağlantısını artırın."
+                ],
+                mistakeTitle: "Kritik Xəta: Dirsəklərin Düz Bağlanması",
+                mistakeDesc: "Dirsəkləri tam açaraq itələmək bicep tendonuna və dirsək oynağına qəfil yüklənmə yaradır.",
+                restSeconds: 75,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.18, 1.30, 0.42], label: "Ön Dirsək", risk: "Biceps Tendon Zədəsi" },
+                    { pos: [-0.18, 1.30, 0.42], label: "Ön Dirsək", risk: "Biceps Tendon Zədəsi" }
+                ]
+            },
+            station_triceps_pushdown: {
+                id: "station_triceps_pushdown", name: "Stansiyada Triceps Pushdown", type: "station",
+                category: "Qol & Triceps",
+                primaryMuscle: "Triceps Brachii (Üçbaşlı Çiyin Əzələsi)",
+                desc: "Yuxarı blokdan asılan rope-u hər iki əlinizlə tutub dirsəkləri gövdədə sabit saxlayaraq aşağı dartın.",
+                telemetryLabels: ["Dirsək Açılışı", "Gövdə Sabitliyi", "Triceps Sıxılması"],
+                cues: [
+                    "Dirsəkləri qabırğalarınıza yapışdırın; hərəkət boyu hərəkətsiz saxlayın.",
+                    "Enmənin sonunda 1 saniyə tricepsi sıxıb pauza verin.",
+                    "Gövdəni yellətməyin; çəki yalnız dirsək oynağından gəlməlidir."
+                ],
+                mistakeTitle: "Kritik Xəta: Gövdəni Yellətmək",
+                mistakeDesc: "Çəkini qaldırmaq üçün gövdəni yellətmək bel fəqərələrinə yük salır və tricepsin effektiv yığılmasını azaldır.",
+                restSeconds: 60,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.00, 0.95, 0.20], label: "Bel L4-L5", risk: "Onurğa Gərginliyi" }
+                ]
+            },
+            station_seated_row: {
+                id: "station_seated_row", name: "Stansiyada Seated Cable Row", type: "station",
+                category: "Kürək & Orta Zəncir",
+                primaryMuscle: "Rhomboids & Middle Trapezius",
+                desc: "Aşağı blokdan V-bar-ı tutaraq qarına doğru dartın. Kürək qanadlarını sıxın, dirsəkləri gövdəyə yaxın saxlayın.",
+                telemetryLabels: ["Dirsək Dartılışı", "Gövdə Meyli", "Kürək Sıxılması"],
+                cues: [
+                    "Dartışı qollarla yox, kürək qanadlarını yaxınlaşdıraraq başladın.",
+                    "Gövdəni dik saxlayın; əvvəlcə 15° önə əyilin, sonra dartışla dikəlin.",
+                    "Dirsəkləri gövdədən uzaqlaşdırmayın — 15° içəri bucaqla dartın."
+                ],
+                mistakeTitle: "Kritik Xəta: Belin Yellənməsi",
+                mistakeDesc: "Hərəkəti arxaya əyilərək güc yığmaq bel fəqərələrinə təzyiq salır və zədə riskini artırır.",
+                restSeconds: 90,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.00, 0.95, 0.20], label: "Bel L4-L5", risk: "Onurğa Disk Yırtığı" }
+                ]
+            },
+            goblet_squat: {
+                id: "goblet_squat", name: "Dumbbell Goblet Squat", type: "dumbbell",
+                category: "Baza & Çömbəlmə",
+                primaryMuscle: "Quadriceps & Gluteus Maximus (Böyük Sağrı Əzələsi)",
+                desc: "Ağır qanteli şaquli olaraq sinənin önündə ovuclarınızda tutun. Budlar yerə paralel olanadək dərin çömbəlin.",
+                telemetryLabels: ["Diz Bucağı", "Bud Meyli", "Onurğa Meyli"],
+                cues: [
+                    "Qanteli sinənizə möhkəm yapışdırın; dirsəkləri aşağı yönəldin.",
+                    "Dizləri ayaq barmaqlarınızın baxdığı bucaqda (30° xaricə) kənara itələyin.",
+                    "Dabanları yerdən qaldırmayın; çəki daban və ayağın ortasında paylanmalıdır."
+                ],
+                mistakeTitle: "Kritik Xəta: Dizlərin İçəriyə Çökməsi",
+                mistakeDesc: "Enmə zamanı dizlər içəriyə qatlanır və bel donqarlaşır. ACL və diz menisklərinə zədə vurur.",
+                restSeconds: 90,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.10, 0.50, 1.00], label: "Diz ACL", risk: "Ön Çarpaz Bağ Zədəsi" },
+                    { pos: [-0.10, 0.50, 1.00], label: "Diz ACL", risk: "Ön Çarpaz Bağ Zədəsi" }
+                ]
+            },
+            dumbbell_shoulder_press: {
+                id: "dumbbell_shoulder_press", name: "Dumbbell Overhead Press", type: "dumbbell",
+                category: "Çiyin & Deltoid",
+                primaryMuscle: "Anterior & Lateral Deltoid",
+                desc: "Qantellər çiyin səviyyəsindən yuxarıya təbii skapulyar qövslə qaldırılır, qollar başın üstündə tam açılır.",
+                telemetryLabels: ["Dirsək Bucağı", "Çiyin Açısı", "Lomber Onurğa"],
+                cues: [
+                    "Dirsəkləri birbaşa yanlara yox, 30° qabağa - skapulyar müstəviyə gətirin.",
+                    "Yuxarı itələyərkən beli arxaya əyməyin; qarın və gluteus əzələlərini kilidləyin.",
+                    "Yuxarı nöqtədə qantelləri bir-birinə vurub zərbə yaratmayın."
+                ],
+                mistakeTitle: "Kritik Xəta: Belin Arxaya Qatlanması",
+                mistakeDesc: "Gövdəni arxaya əyərək çiyin presini döş presinə çevirmək bel fəqərələrini əzir.",
+                restSeconds: 75,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.00, 0.95, 1.10], label: "Bel L4-L5", risk: "Lordoz Artması" }
+                ]
+            },
+            dumbbell_rdl: {
+                id: "dumbbell_rdl", name: "Dumbbell Romanian Deadlift", type: "dumbbell",
+                category: "Arxa Zəncir & Hamstring",
+                primaryMuscle: "Hamstrings (Baldır Arxası Əzələləri) & Gluteus Maximus",
+                desc: "Dizlərdə sabit mikrobükülmə saxlanılaraq çanaq arxaya itələnir. Onurğa düz qalaraq hamstringlər maksimum gərilir.",
+                telemetryLabels: ["Bud Hinge", "Diz Bucağı", "Onurğa Düzlüyü"],
+                cues: [
+                    "Bu hərəkət çömbəlmə deyil; əsas hədəf çanağı maksimum arxaya aparmaqdır.",
+                    "Qantelləri ayaq baldırlarına bitişik sürüşdürün.",
+                    "Boynunuzu yuxarı qaldırmayın; baxışları 2 metr qabağa döşəməyə yönəldin."
+                ],
+                mistakeTitle: "Kritik Xəta: Onurğanın Donqarlaşması",
+                mistakeDesc: "Çanağı arxaya itələmək əvəzinə beli bükərək əyilmək onurğa disklərini partlama təzyiqinə məruz qoyur.",
+                restSeconds: 90,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.00, 1.05, 1.10], label: "Bel L4-L5 Disk", risk: "Disk Partlaması" }
+                ]
+            },
+            dumbbell_biceps_curl: {
+                id: "dumbbell_biceps_curl", name: "Dumbbell Biceps Curl", type: "dumbbell",
+                category: "Qol & Biceps",
+                primaryMuscle: "Biceps Brachii (İkibaşlı Çiyin Əzələsi)",
+                desc: "Dirsəklər gövdəyə sabit saxlanılır, ön qol yuxarı bükülərək bilək supinasiya olunur.",
+                telemetryLabels: ["Dirsək Bucağı", "Çiyin Meyli", "Onurğa"],
+                cues: [
+                    "Dirsəkləri qabırğalara perpendikulyar və sabit saxlayın.",
+                    "Qaldırarkən çeçələ barmağı xaricə çevirərək biləyi tam supinasiya edin.",
+                    "Enmə zamanı ağırlığı dərhal buraxmayın; 2 saniyəlik nəzarətli eksentrik edin."
+                ],
+                mistakeTitle: "Kritik Xəta: Beli Yelləmək",
+                mistakeDesc: "Beli yelləyərək inersiya ilə qaldırmaq onurğa disklərinə zədələyici kəsmə qüvvəsi salır.",
+                restSeconds: 60,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.00, 0.95, 1.10], label: "Bel L5-S1", risk: "Disk Yırtığı" }
+                ]
+            },
+            dumbbell_hammer_curl: {
+                id: "dumbbell_hammer_curl", name: "Dumbbell Hammer Curl", type: "dumbbell",
+                category: "Qol & Brachialis",
+                primaryMuscle: "Brachialis & Brachioradialis (Ön Qol Əzələləri)",
+                desc: "Qantelləri neytral tutuşla (baş barmaqlar yuxarı) tutaraq dirsəkləri gövdədə sabit saxlayıb ön qolları bükün.",
+                telemetryLabels: ["Dirsək Bucağı", "Bilek Pozisiyası", "Dirsək Meyli"],
+                cues: [
+                    "Qantelləri baş barmaqları yuxarı, neytral mövqeydə tutun.",
+                    "Dirsəkləri qabırğalara bitişik və hərəkətsiz saxlayın.",
+                    "Hərəkəti yavaş və nəzarətli edin; sürətli yelləməkdən çəkinin."
+                ],
+                mistakeTitle: "Kritik Xəta: Dirsəklərin Sürüşməsi",
+                mistakeDesc: "Dirsəklərin irəli-geri sürüşməsi bilək tendonlarına təzyiq salır və brachialis-in effektiv yığılmasını azaldır.",
+                restSeconds: 60,
+                targetReps: 12,
+                injuryJoints: [
+                    { pos: [0.00, 0.95, 1.10], label: "Bel L5-S1", risk: "Onurğa Gərginliyi" }
+                ]
+            },
+            dumbbell_lateral_raise: {
+                id: "dumbbell_lateral_raise", name: "Dumbbell Lateral Raise", type: "dumbbell",
+                category: "Orta Çiyin İzolyasiyası",
+                primaryMuscle: "Lateral Deltoid (Orta Çiyin)",
+                desc: "Dirsəklərdə cüzi bükülmə saxlanaraq qollar yanlara çiyin səviyyəsinə qədər qaldırılır.",
+                telemetryLabels: ["Qol Hündürlüyü", "Dirsək Bucağı", "Gövdə Meyli"],
+                cues: [
+                    "Çiyinlərinizi qulaqlarınıza doğru qaldırmayın; çiyinləri aşağı sıxaraq qolları qaldırın.",
+                    "Dirsəklər biləkdən aşağı düşməməlidir.",
+                    "Ağırlığı gövdəni yelləyərək tullamayın; yuxarıda yarım saniyəlik izometrik fasilə verin."
+                ],
+                mistakeTitle: "Kritik Xəta: Gövdə ilə Tullamaq",
+                mistakeDesc: "Qantelləri tullanaraq inersiya ilə qaldırmaq orta deltoidin yükünü oğurlayır.",
+                restSeconds: 60,
+                targetReps: 15,
+                injuryJoints: [
+                    { pos: [0.25, 1.45, 1.10], label: "Çiyin İmpingement", risk: "Subakromial Sıxılma" },
+                    { pos: [-0.25, 1.45, 1.10], label: "Çiyin İmpingement", risk: "Subakromial Sıxılma" }
+                ]
+            },
+            dumbbell_walking_lunge: {
+                id: "dumbbell_walking_lunge", name: "Dumbbell Walking Lunge", type: "dumbbell",
+                category: "Ayaq & Baza Gücü",
+                primaryMuscle: "Quadriceps & Gluteus Maximus",
+                desc: "Hər əldə bir qantel, bir ayağı irəli addımlayaraq diz 90° bükülənə qədər enin. Arxa diz yerə yaxınlaşır, sonra geri itələyin.",
+                telemetryLabels: ["Ön Diz Bucağı", "Arxa Diz Bucağı", "Gövdə Dikliyi"],
+                cues: [
+                    "Ön dizi ayaq barmağının üstündən kənara çıxarmayın.",
+                    "Addım uzunluğunu kifayət qədər geniş tutun; dar addım quad-a daha çox yüklənir.",
+                    "Yuxarı qalxarkən ön dəbinizlə itələyin, arxa dizi yerə sürtməyin."
+                ],
+                mistakeTitle: "Kritik Xəta: Dizlərin Valgus Çökməsi",
+                mistakeDesc: "Ön dizin içəriyə çökməsi ACL və medial meniskusa kəskin təzyiq salır; idmançını yaralaya bilər.",
+                restSeconds: 75,
+                targetReps: 10,
+                injuryJoints: [
+                    { pos: [0.10, 0.50, 1.10], label: "Ön Diz ACL", risk: "Ön Çarpaz Bağ Zədəsi" },
+                    { pos: [-0.10, 0.50, 1.10], label: "Arxa Diz", risk: "Patellar Tendinit" }
+                ]
+            }
+        };
+
+        let currentDayIndex = 0;
+        let currentExerciseKey = "station_chest_press";
+        let techniqueMode = "correct";
+        let isPlaying = true;
+        let motionProgress = 0.0;
+        let motionSpeed = 1.0;
+        let autoRotateCamera = false;
+        let breathPhase = 0;
+
+        // ---- REP COUNTER & REST TIMER STATE ----
+        let repCount = 0;
+        let lastMotionProgress = 0;
+        let repJustCompleted = false;
+        let restStartTime = 0;
+        let restActive = false;
+        let audioEnabled = (typeof localStorage !== 'undefined' && localStorage.apexMute === '1') ? false : true;
+        let audioContext = null;
+
+        /* =========================================================================
+           2. THREE.JS SCENE SETUP & MATERIALS
+           ========================================================================= */
+        let scene, camera, renderer, controls;
+        let viewport = document.getElementById('three-hero-viewport');
+        let athleteRig = null;
+        let multiGymStation = null;
+        let dumbbellL = null, dumbbellR = null, singleHeavyDumbbell = null;
+
+        // Enhanced PBR Materials
+        const PBR = {
+            skin: new THREE.MeshStandardMaterial({
+                color: 0xd4956b,
+                color: 0xc88258,
+                roughness: 0.54,
+                metalness: 0.02,
+                emissive: 0x1f0e06,
+                emissiveIntensity: 0.06
+            }),
+            skinDark: new THREE.MeshStandardMaterial({
+                color: 0xb57248,
+                roughness: 0.58,
+                metalness: 0.02
+            }),
+            eyeWhite: new THREE.MeshStandardMaterial({
+                color: 0xf5f0e8,
+                roughness: 0.3,
+                metalness: 0.0
+            }),
+            iris: new THREE.MeshStandardMaterial({
+                color: 0x3d2b1f,
+                roughness: 0.4,
+                metalness: 0.1
+            }),
+            pupil: new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.2,
+                metalness: 0.0
+            }),
+            lip: new THREE.MeshStandardMaterial({
+                color: 0xb86b5e,
+                roughness: 0.55,
+                metalness: 0.02
+            }),
+            eyebrow: new THREE.MeshStandardMaterial({
+                color: 0x140e08,
+                roughness: 0.95
+            }),
+            shorts: new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.82,
+                metalness: 0.05
+            }),
+            waistband: new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.75
+            }),
+            sneakerUpper: new THREE.MeshStandardMaterial({
+                color: 0x111827,
+                roughness: 0.65
+            }),
+            sneakerSole: new THREE.MeshStandardMaterial({
+                color: 0xe2e8f0,
+                roughness: 0.3
+            }),
+            sneakerAccent: new THREE.MeshStandardMaterial({
+                color: 0x38bdf8,
+                roughness: 0.4,
+                metalness: 0.1
+            }),
+            hair: new THREE.MeshStandardMaterial({
+                color: 0x140e08,
+                roughness: 0.94
+            }),
+            // Station Materials (Faithful to user's photo)
+            machineFrame: new THREE.MeshStandardMaterial({
+                color: 0x474f5d,
+                roughness: 0.35,
+                metalness: 0.85
+            }),
+            machinePads: new THREE.MeshStandardMaterial({
+                color: 0x0f1217,
+                roughness: 0.68,
+                metalness: 0.04
+            }),
+            foamRollers: new THREE.MeshStandardMaterial({
+                color: 0x12141a,
+                roughness: 0.90,
+                metalness: 0.02
+            }),
+            chrome: new THREE.MeshStandardMaterial({
+                color: 0xe2e8f0,
+                roughness: 0.15,
+                metalness: 0.95
+            }),
+            weightStack: new THREE.MeshStandardMaterial({
+                color: 0x16181f,
+                roughness: 0.75,
+                metalness: 0.50
+            }),
+            cable: new THREE.MeshStandardMaterial({
+                color: 0x94a3b8,
+                roughness: 0.25,
+                metalness: 0.75
+            }),
+            // Bio-glow muscle materials (independent instances so each can pulse)
+            muscleDefault: new THREE.MeshStandardMaterial({
+                color: 0xc88258, roughness: 0.54, metalness: 0.02,
+                emissive: 0x1f0e06, emissiveIntensity: 0.06
+            }),
+            muscleActive: new THREE.MeshStandardMaterial({
+                color: 0xc88258, roughness: 0.50, metalness: 0.02,
+                emissive: 0xff6b1a, emissiveIntensity: 0.0
+            }),
+            muscleSynergist: new THREE.MeshStandardMaterial({
+                color: 0xc88258, roughness: 0.52, metalness: 0.02,
+                emissive: 0x1a78ff, emissiveIntensity: 0.0
+            }),
+            injuryRing: new THREE.MeshBasicMaterial({
+                color: 0xff2244, transparent: true, opacity: 0.85
+            }),
+            injuryRingGlow: new THREE.MeshBasicMaterial({
+                color: 0xff5577, transparent: true, opacity: 0.35
+            })
+        };
+
+        // Independent material instances per muscle group so they can pulse separately
+        PBR.muscleGroups = {
+            pecMajorL: PBR.muscleDefault.clone(),
+            pecMajorR: PBR.muscleDefault.clone(),
+            latL: PBR.muscleDefault.clone(),
+            latR: PBR.muscleDefault.clone(),
+            deltoidL: PBR.muscleDefault.clone(),
+            deltoidR: PBR.muscleDefault.clone(),
+            bicepsL: PBR.muscleDefault.clone(),
+            bicepsR: PBR.muscleDefault.clone(),
+            tricepsL: PBR.muscleDefault.clone(),
+            tricepsR: PBR.muscleDefault.clone(),
+            quadL: PBR.muscleDefault.clone(),
+            quadR: PBR.muscleDefault.clone(),
+            hamstringL: PBR.muscleDefault.clone(),
+            hamstringR: PBR.muscleDefault.clone(),
+            calfL: PBR.muscleDefault.clone(),
+            calfR: PBR.muscleDefault.clone(),
+            gluteL: PBR.muscleDefault.clone(),
+            gluteR: PBR.muscleDefault.clone(),
+            abL: PBR.muscleDefault.clone(),
+            abR: PBR.muscleDefault.clone()
+        };
+
+        // Cache original emissive targets for pulse animation
+        const MUSCLE_BASE_EMISSIVE = 0x1f0e06;
+        const MUSCLE_BASE_INTENSITY = 0.06;
+
+        function initScene() {
+            try {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0e18);
+                scene.fog = new THREE.FogExp2(0x0a0e18, 0.035);
+
+                camera = new THREE.PerspectiveCamera(38, viewport.clientWidth / viewport.clientHeight, 0.1, 50);
+                camera.position.set(2.6, 1.5, 3.0);
+
+                renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+                renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.25;
+                if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+                viewport.appendChild(renderer.domElement);
+
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.06;
+                controls.target.set(0, 0.95, 0.2);
+                controls.maxPolarAngle = Math.PI / 2 + 0.02;
+                controls.minDistance = 1.2;
+                controls.maxDistance = 8.0;
+
+                // Studio Lighting
+                const hemi = new THREE.HemisphereLight(0x8ecef7, 0x0a0e18, 0.65);
+                scene.add(hemi);
+
+                const keyLight = new THREE.DirectionalLight(0xfff6ea, 1.5);
+                keyLight.position.set(3, 5.5, 4);
+                keyLight.castShadow = true;
+                keyLight.shadow.mapSize.set(2048, 2048);
+                keyLight.shadow.bias = -0.0004;
+                keyLight.shadow.camera.near = 0.5;
+                keyLight.shadow.camera.far = 15;
+                keyLight.shadow.camera.left = -4;
+                keyLight.shadow.camera.right = 4;
+                keyLight.shadow.camera.top = 4;
+                keyLight.shadow.camera.bottom = -4;
+                scene.add(keyLight);
+
+                const fillLight = new THREE.DirectionalLight(0x94a3b8, 0.45);
+                fillLight.position.set(-4, 3, 2);
+                scene.add(fillLight);
+
+                const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+                rimLight.position.set(0, 4, -5);
+                scene.add(rimLight);
+
+                const underLight = new THREE.PointLight(0x38bdf8, 0.45, 6);
+                underLight.position.set(0, 0.1, 1.5);
+                scene.add(underLight);
+
+                // Ground Platform
+                const plinthGeo = new THREE.CylinderGeometry(2.5, 2.6, 0.08, 64);
+                const plinthMat = new THREE.MeshStandardMaterial({ color: 0x0d1220, roughness: 0.75, metalness: 0.12 });
+                const plinth = new THREE.Mesh(plinthGeo, plinthMat);
+                plinth.position.y = -0.04;
+                plinth.receiveShadow = true;
+                scene.add(plinth);
+
+                // Subtle accent rings
+                [1.2, 1.8, 2.4].forEach(r => {
+                    const ring = new THREE.Mesh(
+                        new THREE.RingGeometry(r, r + 0.012, 64),
+                        new THREE.MeshBasicMaterial({ color: 0x38bdf8, opacity: 0.15, transparent: true, side: THREE.DoubleSide })
+                    );
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.y = 0.002;
+                    scene.add(ring);
+                });
+
+                multiGymStation = buildStation();
+                scene.add(multiGymStation.root);
+
+                dumbbellL = createDumbbell(14);
+                dumbbellR = createDumbbell(14);
+                singleHeavyDumbbell = createGobletDumbbell(22);
+                scene.add(dumbbellL, dumbbellR, singleHeavyDumbbell);
+
+                athleteRig = buildAthlete();
+                scene.add(athleteRig.root);
+
+                window.addEventListener('resize', onWindowResize);
+                initUI();
+                animate();
+            } catch (err) {
+                console.error("Critical 3D Scene Initialization Error:", err);
+                if (viewport) {
+                    viewport.innerHTML = `
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fb7185;text-align:center;padding:24px;font-family:sans-serif">
+                            <div style="font-size:36px;margin-bottom:12px">⚠</div>
+                            <div style="font-weight:800;font-size:16px;margin-bottom:8px">3D Modeli Yükləmək Mümkün Olmadı</div>
+                            <div style="font-size:12px;color:#94a3b8;max-width:440px;line-height:1.6">${err.message}</div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        /* =========================================================================
+           3. MULTI-GYM STATION (FAITHFUL TO USER'S EQUIPMENT)
+           ========================================================================= */
+        function buildStation() {
+            const st = {
+                root: new THREE.Group(),
+                pressArms: null, latBar: null, legDeveloper: null,
+                cables: { up: null, back: null, down: null },
+                weightPlates: [],
+                weightSep: [],
+                topSelector: null,
+                selectorPin: null,
+                weightBaseY: 0,
+                injuryRings: new THREE.Group(),
+                pecFlyArms: { left: null, right: null }
+            };
+            st.injuryRings.visible = false;
+            const root = st.root;
+            root.add(st.injuryRings);
+
+            const fr = PBR.machineFrame;
+            const pd = PBR.machinePads;
+            const fm = PBR.foamRollers;
+            const ch = PBR.chrome;
+            const wt = PBR.weightStack;
+            const cb = PBR.cable;
+
+            // Foam roller builder with rounded ends (100% Three.js r128 compatible)
+            function createFoamRoller(radius, length) {
+                const group = new THREE.Group();
+                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 24), fm);
+                cyl.rotation.z = Math.PI / 2;
+                cyl.castShadow = true;
+                const cap1 = new THREE.Mesh(new THREE.SphereGeometry(radius, 14, 14), fm);
+                cap1.position.x = length / 2;
+                const cap2 = new THREE.Mesh(new THREE.SphereGeometry(radius, 14, 14), fm);
+                cap2.position.x = -length / 2;
+                group.add(cyl, cap1, cap2);
+                return group;
+            }
+
+            // Base H-frame with rounded end caps
+            const baseCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.55, 16), fr);
+            baseCenter.rotation.x = Math.PI / 2;
+            baseCenter.position.set(0, 0.035, 0);
+            baseCenter.castShadow = true;
+
+            const baseFront = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.85, 16), fr);
+            baseFront.rotation.z = Math.PI / 2;
+            baseFront.position.set(0, 0.035, 0.72);
+
+            const baseRear = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.95, 16), fr);
+            baseRear.rotation.z = Math.PI / 2;
+            baseRear.position.set(0, 0.035, -0.72);
+
+            // Rounded end caps on base frame
+            [[-0.425, 0.035, 0.72], [0.425, 0.035, 0.72], [-0.475, 0.035, -0.72], [0.475, 0.035, -0.72]].forEach(p => {
+                const cap = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), fr);
+                cap.position.set(...p);
+                root.add(cap);
+            });
+            root.add(baseCenter, baseFront, baseRear);
+
+            // Main Upright (rounded steel tube)
+            const mainUpright = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.10, 16), fr);
+            mainUpright.position.set(0, 1.05, -0.15);
+            mainUpright.castShadow = true;
+            root.add(mainUpright);
+
+            const topCap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), fr);
+            topCap.position.set(0, 2.10, -0.15);
+            root.add(topCap);
+
+            // Top Cantilever Arm
+            const topArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.05, 16), fr);
+            topArm.rotation.x = Math.PI / 2;
+            topArm.position.set(0, 2.05, 0.25);
+            topArm.castShadow = true;
+            root.add(topArm);
+
+            // Top Pulley Wheel
+            const pulleyHub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 24), ch);
+            pulleyHub.rotation.z = Math.PI / 2;
+            pulleyHub.position.set(0, 2.05, 0.72);
+            root.add(pulleyHub);
+
+            const pulleyRim = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.008, 12, 24), ch);
+            pulleyRim.position.set(0, 2.05, 0.72);
+            pulleyRim.rotation.y = Math.PI / 2;
+            root.add(pulleyRim);
+
+            // Cable from pulley down to lat bar
+            const cableUp = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.22, 8), cb);
+            cableUp.position.set(0, 1.94, 0.72);
+            cableUp.userData.baseY = 1.94;
+            cableUp.userData.baseLen = 0.22;
+            root.add(cableUp);
+            st.cables.up = cableUp;
+
+            // Cable from top pulley back to rear mast
+            const cableBack = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 1.34, 8), cb);
+            cableBack.rotation.x = Math.PI / 2;
+            cableBack.position.set(0, 2.05, 0.05);
+            root.add(cableBack);
+            st.cables.back = cableBack;
+
+            // Cable vertical drop down into weight stack
+            const cableDown = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 1.15, 8), cb);
+            cableDown.position.set(0, 1.48, -0.62);
+            cableDown.userData.baseY = 1.48;
+            cableDown.userData.baseLen = 1.15;
+            root.add(cableDown);
+            st.cables.down = cableDown;
+
+            // Wide Curved Lat Pulldown Bar (matching user photo)
+            const latGroup = new THREE.Group();
+            latGroup.position.set(0, 1.83, 0.72);
+
+            const latCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.75, 20), ch);
+            latCenter.rotation.z = Math.PI / 2;
+            latGroup.add(latCenter);
+
+            // Central carabiner hook
+            const centerHook = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 8, 16), ch);
+            centerHook.position.set(0, 0.035, 0);
+            latGroup.add(centerHook);
+
+            [-1, 1].forEach(sign => {
+                const wing = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.32, 16), ch);
+                wing.position.set(sign * 0.51, -0.06, 0);
+                wing.rotation.z = -sign * (Math.PI / 2 + 0.38);
+                latGroup.add(wing);
+
+                const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.16, 16), pd);
+                grip.position.set(sign * 0.56, -0.08, 0);
+                grip.rotation.z = -sign * (Math.PI / 2 + 0.38);
+                latGroup.add(grip);
+
+                const gripCap = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 10), pd);
+                gripCap.position.set(sign * 0.65, -0.12, 0);
+                latGroup.add(gripCap);
+            });
+            root.add(latGroup);
+            st.latBar = latGroup;
+
+            // Weight Stack Tower (Centered directly behind backrest matching user photo)
+            const stackGroup = new THREE.Group();
+            stackGroup.position.set(0, 0.05, -0.62);
+
+            [-0.14, 0.14].forEach(x => {
+                const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 1.85, 14), ch);
+                rod.position.set(x, 0.92, 0);
+                stackGroup.add(rod);
+            });
+
+            for (let i = 0; i < 12; i++) {
+                const plate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.055, 0.18), wt);
+                plate.position.set(0, 0.04 + i * 0.062, 0);
+                plate.userData.baseY = plate.position.y;
+                plate.castShadow = true;
+                stackGroup.add(plate);
+                st.weightPlates.push(plate);
+
+                if (i < 11) {
+                    const sep = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.003, 0.19), ch);
+                    sep.position.set(0, 0.04 + i * 0.062 + 0.028, 0);
+                    sep.userData.baseY = sep.position.y;
+                    stackGroup.add(sep);
+                    st.weightSep.push(sep);
+                }
+            }
+
+            // Top selector plate with pin & cable hook
+            const topSelector = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.06, 0.18), ch);
+            topSelector.position.set(0, 0.04 + 12 * 0.062, 0);
+            topSelector.userData.baseY = topSelector.position.y;
+            const selectorPin = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.16, 12), PBR.sneakerAccent);
+            selectorPin.rotation.x = Math.PI / 2;
+            selectorPin.position.set(0, 0.04 + 7 * 0.062, 0.10);
+            selectorPin.userData.baseY = selectorPin.position.y;
+            stackGroup.add(topSelector, selectorPin);
+            root.add(stackGroup);
+            st.topSelector = topSelector;
+            st.selectorPin = selectorPin;
+
+            // Seat (rounded pad)
+            const seatPad = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.07, 0.38), pd);
+            seatPad.position.set(0, 0.52, 0.22);
+            seatPad.castShadow = true;
+
+            const seatEdge = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.34, 16), pd);
+            seatEdge.rotation.z = Math.PI / 2;
+            seatEdge.position.set(0, 0.52, 0.41);
+
+            const seatPost = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.44, 12), fr);
+            seatPost.position.set(0, 0.28, 0.22);
+            root.add(seatPad, seatEdge, seatPost);
+
+            // Backrest (contoured, rounded)
+            const backPad = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.62, 0.06), pd);
+            backPad.position.set(0, 0.95, -0.06);
+            backPad.rotation.x = -0.06;
+            backPad.castShadow = true;
+
+            const backTop = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.30, 16), pd);
+            backTop.rotation.z = Math.PI / 2;
+            backTop.position.set(0, 1.26, -0.06);
+            root.add(backPad, backTop);
+
+            // Chest Press & Pec Fly Arms (Wishbone arch matching user photo)
+            const pressGroup = new THREE.Group();
+            pressGroup.position.set(0, 1.18, -0.10);
+
+            // Overhead pivot crossbar
+            const overheadPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.58, 16), fr);
+            overheadPivot.rotation.z = Math.PI / 2;
+            overheadPivot.position.set(0, 0.12, 0);
+            pressGroup.add(overheadPivot);
+
+            [-1, 1].forEach(sign => {
+                const armSide = new THREE.Group();
+                armSide.position.set(sign * 0.28, 0, 0);
+                armSide.userData.sideSign = sign;
+                if (sign === 1) st.pecFlyArms.left = armSide;
+                else st.pecFlyArms.right = armSide;
+
+                // Top curved wishbone tube
+                const topCurvedArm = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.36, 16), fr);
+                topCurvedArm.rotation.x = Math.PI / 2;
+                topCurvedArm.position.set(0, 0.08, 0.16);
+
+                // Vertical forearm pad (Pec Fly / Butterfly pad)
+                const vertRoller = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.34, 20), pd);
+                vertRoller.position.set(sign * 0.06, -0.06, 0.32);
+                vertRoller.castShadow = true;
+
+                // Rounded roller caps
+                const rollerTopCap = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 14), pd);
+                rollerTopCap.position.set(sign * 0.06, 0.11, 0.32);
+                const rollerBotCap = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 14), pd);
+                rollerBotCap.position.set(sign * 0.06, -0.23, 0.32);
+
+                // Lower vertical grip handle pointing down
+                const vertHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.18, 14), ch);
+                vertHandle.position.set(sign * 0.06, -0.32, 0.32);
+                const vertGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.13, 14), pd);
+                vertGrip.position.set(sign * 0.06, -0.32, 0.32);
+
+                // Forward horizontal chest press handle
+                const horizHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.20, 14), ch);
+                horizHandle.rotation.x = Math.PI / 2;
+                horizHandle.position.set(sign * 0.06, -0.10, 0.42);
+                const horizGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.14, 14), pd);
+                horizGrip.rotation.x = Math.PI / 2;
+                horizGrip.position.set(sign * 0.06, -0.10, 0.42);
+
+                armSide.add(topCurvedArm, vertRoller, rollerTopCap, rollerBotCap, vertHandle, vertGrip, horizHandle, horizGrip);
+                pressGroup.add(armSide);
+            });
+            root.add(pressGroup);
+            st.pressArms = pressGroup;
+
+            // Leg Extension Developer (with authentic cylindrical foam rollers)
+            const legDevGroup = new THREE.Group();
+            legDevGroup.position.set(0, 0.50, 0.44);
+
+            const legArmBar = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.45, 12), fr);
+            legArmBar.position.set(0, -0.20, 0);
+
+            // Upper crossbar for knee/thigh rollers
+            const upperCrossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.48, 16), ch);
+            upperCrossbar.rotation.z = Math.PI / 2;
+            upperCrossbar.position.set(0, 0, 0.04);
+            legDevGroup.add(upperCrossbar);
+
+            [-0.18, 0.18].forEach(x => {
+                const rollerTop = createFoamRoller(0.045, 0.14);
+                rollerTop.position.set(x, 0, 0.04);
+                legDevGroup.add(rollerTop);
+            });
+
+            // Lower crossbar for shin/ankle rollers
+            const lowerCrossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.48, 16), ch);
+            lowerCrossbar.rotation.z = Math.PI / 2;
+            lowerCrossbar.position.set(0, -0.40, 0.08);
+
+            [-0.18, 0.18].forEach(x => {
+                const rollerBot = createFoamRoller(0.045, 0.14);
+                rollerBot.position.set(x, -0.40, 0.08);
+                legDevGroup.add(rollerBot);
+            });
+
+            legDevGroup.add(legArmBar, lowerCrossbar);
+            root.add(legDevGroup);
+            st.legDeveloper = legDevGroup;
+
+            return st;
+        }
+
+        /* =========================================================================
+           4. REALISTIC HUMAN ATHLETE (IMPROVED ANATOMY & FACE)
+           ========================================================================= */
+        function buildAthlete() {
+            const rig = {
+                root: new THREE.Group(),
+                pelvis: null, spine: null, chest: null, neck: null, head: null,
+                leftShoulder: null, rightShoulder: null,
+                leftUpperArm: null, rightUpperArm: null,
+                leftBicepMesh: null, rightBicepMesh: null,
+                leftForearm: null, rightForearm: null,
+                leftHand: null, rightHand: null,
+                leftFingers: [], rightFingers: [],
+                leftThumb: null, rightThumb: null,
+                leftUpperLeg: null, rightUpperLeg: null,
+                leftLowerLeg: null, rightLowerLeg: null,
+                leftFoot: null, rightFoot: null,
+                chestMesh: null
+            };
+
+            const skin = PBR.skin;
+            const skinD = PBR.skinDark;
+
+            // -- PELVIS --
+            const pelvisGroup = new THREE.Group();
+            pelvisGroup.position.set(0, 0.96, 0);
+            rig.root.add(pelvisGroup);
+            rig.pelvis = pelvisGroup;
+
+            const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.20, 24), PBR.shorts);
+            pelvisMesh.castShadow = true;
+            pelvisGroup.add(pelvisMesh);
+
+            const waistband = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.035, 24), PBR.waistband);
+            waistband.position.y = 0.09;
+            pelvisGroup.add(waistband);
+
+            // Glute contours
+            const gluteL = new THREE.Mesh(new THREE.SphereGeometry(0.105, 18, 18), PBR.shorts);
+            gluteL.scale.set(1.0, 1.1, 0.85);
+            gluteL.position.set(0.08, -0.03, -0.065);
+            gluteL.castShadow = true;
+            const gluteR = gluteL.clone();
+            gluteR.position.x = -0.08;
+            pelvisGroup.add(gluteL, gluteR);
+
+            // -- SPINE & ABS --
+            const spineGroup = new THREE.Group();
+            spineGroup.position.set(0, 0.10, 0);
+            pelvisGroup.add(spineGroup);
+            rig.spine = spineGroup;
+
+            const abdomen = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.16, 0.22, 24), skin);
+            abdomen.position.y = 0.11;
+            abdomen.castShadow = true;
+            spineGroup.add(abdomen);
+
+            // 6-pack abs (subtle bumps)
+            for (let row = 0; row < 3; row++) {
+                const yPos = 0.04 + row * 0.058;
+                [-1, 1].forEach(sign => {
+                    const ab = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+                    ab.scale.set(1.2, 0.8, 0.4);
+                    ab.position.set(sign * 0.035, yPos, 0.15);
+                    spineGroup.add(ab);
+                });
+            }
+
+            // Serratus (side rib muscles)
+            [-1, 1].forEach(sign => {
+                for (let i = 0; i < 3; i++) {
+                    const serr = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 10), skin);
+                    serr.scale.set(0.6, 1.0, 0.4);
+                    serr.position.set(sign * 0.145, 0.08 + i * 0.05, 0.06);
+                    spineGroup.add(serr);
+                }
+            });
+
+            // -- CHEST --
+            const chestGroup = new THREE.Group();
+            chestGroup.position.set(0, 0.22, 0);
+            spineGroup.add(chestGroup);
+            rig.chest = chestGroup;
+
+            const ribcage = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.16, 0.26, 24), skin);
+            ribcage.position.y = 0.13;
+            ribcage.castShadow = true;
+            chestGroup.add(ribcage);
+            rig.chestMesh = ribcage;
+
+            // Pectoral muscles (athletic contoured pectoralis major)
+            const pecGeo = new THREE.SphereGeometry(0.08, 18, 18);
+            const pecL = new THREE.Mesh(pecGeo, PBR.muscleGroups.pecMajorL);
+            pecL.scale.set(1.20, 0.75, 0.38);
+            pecL.position.set(0.078, 0.15, 0.145);
+            pecL.rotation.z = -0.10;
+            pecL.castShadow = true;
+
+            const pecR = new THREE.Mesh(pecGeo, PBR.muscleGroups.pecMajorR);
+            pecR.scale.set(1.20, 0.75, 0.38);
+            pecR.position.set(-0.078, 0.15, 0.145);
+            pecR.rotation.z = 0.10;
+            pecR.castShadow = true;
+            chestGroup.add(pecL, pecR);
+
+            // Lats (V-taper)
+            [-1, 1].forEach(sign => {
+                const latMat = sign === 1 ? PBR.muscleGroups.latL : PBR.muscleGroups.latR;
+                const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.08, 0.24, 16), latMat);
+                lat.position.set(sign * 0.175, 0.12, -0.04);
+                lat.rotation.z = -sign * 0.35;
+                lat.scale.set(1.0, 1.0, 0.55);
+                chestGroup.add(lat);
+            });
+
+            // -- NECK & HEAD --
+            const neckGroup = new THREE.Group();
+            neckGroup.position.set(0, 0.26, 0);
+            chestGroup.add(neckGroup);
+            rig.neck = neckGroup;
+
+            const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.10, 20), skin);
+            neckMesh.position.set(0, 0.05, 0.015);
+            neckMesh.castShadow = true;
+            neckGroup.add(neckMesh);
+
+            // Trapezius (neck to shoulder)
+            [-1, 1].forEach(sign => {
+                const trap = new THREE.Mesh(new THREE.SphereGeometry(0.06, 14, 14), skin);
+                trap.scale.set(1.2, 0.8, 0.7);
+                trap.position.set(sign * 0.08, 0.02, -0.02);
+                neckGroup.add(trap);
+            });
+
+            const headGroup = new THREE.Group();
+            headGroup.position.set(0, 0.10, 0.02);
+            neckGroup.add(headGroup);
+            rig.head = headGroup;
+
+            // Skull
+            const skull = new THREE.Mesh(new THREE.SphereGeometry(0.115, 32, 32), skin);
+            skull.scale.set(0.90, 1.15, 1.04);
+            skull.position.set(0, 0.115, 0.01);
+            skull.castShadow = true;
+            headGroup.add(skull);
+
+            // Jaw / Chin
+            const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.045, 0.085, 18), skin);
+            jaw.position.set(0, 0.055, 0.06);
+            jaw.rotation.x = 0.22;
+            jaw.scale.set(1.0, 1.0, 0.82);
+            headGroup.add(jaw);
+
+            // Chin tip
+            const chinTip = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+            chinTip.position.set(0, 0.025, 0.095);
+            headGroup.add(chinTip);
+
+            // Nose
+            const noseBridge = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.015, 0.04, 12), skin);
+            noseBridge.position.set(0, 0.10, 0.125);
+            noseBridge.rotation.x = 1.2;
+            headGroup.add(noseBridge);
+
+            const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.014, 12, 12), skin);
+            noseTip.position.set(0, 0.085, 0.135);
+            headGroup.add(noseTip);
+
+            // Nostrils
+            [-1, 1].forEach(sign => {
+                const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.007, 8, 8), skinD);
+                nostril.position.set(sign * 0.008, 0.08, 0.13);
+                headGroup.add(nostril);
+            });
+
+            // Eyes
+            [-1, 1].forEach(sign => {
+                const eyeSocket = new THREE.Mesh(new THREE.SphereGeometry(0.024, 16, 16), skinD);
+                eyeSocket.scale.set(1.2, 0.7, 0.3);
+                eyeSocket.position.set(sign * 0.038, 0.115, 0.10);
+                headGroup.add(eyeSocket);
+
+                const eyeball = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 16), PBR.eyeWhite);
+                eyeball.position.set(sign * 0.038, 0.115, 0.115);
+                headGroup.add(eyeball);
+
+                const irisM = new THREE.Mesh(new THREE.SphereGeometry(0.008, 12, 12), PBR.iris);
+                irisM.position.set(sign * 0.038, 0.115, 0.127);
+                headGroup.add(irisM);
+
+                const pupilM = new THREE.Mesh(new THREE.SphereGeometry(0.004, 10, 10), PBR.pupil);
+                pupilM.position.set(sign * 0.038, 0.115, 0.130);
+                headGroup.add(pupilM);
+            });
+
+            // Eyebrows
+            [-1, 1].forEach(sign => {
+                const brow = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.006, 0.012), PBR.eyebrow);
+                brow.position.set(sign * 0.038, 0.135, 0.11);
+                brow.rotation.z = sign * -0.12;
+                headGroup.add(brow);
+            });
+
+            // Lips
+            const upperLip = new THREE.Mesh(new THREE.SphereGeometry(0.018, 14, 14), PBR.lip);
+            upperLip.scale.set(1.3, 0.4, 0.5);
+            upperLip.position.set(0, 0.065, 0.115);
+            headGroup.add(upperLip);
+
+            const lowerLip = new THREE.Mesh(new THREE.SphereGeometry(0.016, 14, 14), PBR.lip);
+            lowerLip.scale.set(1.2, 0.5, 0.45);
+            lowerLip.position.set(0, 0.055, 0.112);
+            headGroup.add(lowerLip);
+
+            // Ears
+            [-1, 1].forEach(sign => {
+                const ear = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+                ear.scale.set(0.3, 1.0, 0.6);
+                ear.position.set(sign * 0.108, 0.105, 0.01);
+                headGroup.add(ear);
+            });
+
+            // Hair (short athletic cut)
+            const hairTop = new THREE.Mesh(
+                new THREE.SphereGeometry(0.118, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.52),
+                PBR.hair
+            );
+            hairTop.position.set(0, 0.13, 0.005);
+            hairTop.scale.set(0.93, 1.12, 1.06);
+            headGroup.add(hairTop);
+
+            // Side hair / fade
+            [-1, 1].forEach(sign => {
+                const sideHair = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 16, 0, Math.PI, 0, Math.PI * 0.55), PBR.hair);
+                sideHair.position.set(sign * 0.02, 0.115, 0.01);
+                sideHair.rotation.y = sign * Math.PI / 2;
+                sideHair.scale.set(0.5, 1.0, 1.0);
+                headGroup.add(sideHair);
+            });
+
+            // -- ARMS --
+            ['left', 'right'].forEach(side => {
+                const isL = side === 'left';
+                const s = isL ? 1 : -1;
+
+                const shoulder = new THREE.Group();
+                shoulder.position.set(s * 0.25, 0.22, 0);
+                chestGroup.add(shoulder);
+
+                // Deltoid (3D round muscle)
+                const deltMat = isL ? PBR.muscleGroups.deltoidL : PBR.muscleGroups.deltoidR;
+                const delt = new THREE.Mesh(new THREE.SphereGeometry(0.088, 20, 20), deltMat);
+                delt.scale.set(1.0, 1.2, 1.0);
+                delt.castShadow = true;
+                shoulder.add(delt);
+
+                const upperArm = new THREE.Group();
+                shoulder.add(upperArm);
+
+                // Tricep
+                const triMat = isL ? PBR.muscleGroups.tricepsL : PBR.muscleGroups.tricepsR;
+                const tricep = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.048, 0.27, 18), triMat);
+                tricep.position.set(0, -0.135, -0.012);
+                tricep.castShadow = true;
+                upperArm.add(tricep);
+
+                // Bicep (dynamic bulge)
+                const bicMat = isL ? PBR.muscleGroups.bicepsL : PBR.muscleGroups.bicepsR;
+                const bicep = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 18), bicMat);
+                bicep.scale.set(0.85, 1.4, 0.9);
+                bicep.position.set(0, -0.13, 0.02);
+                upperArm.add(bicep);
+
+                const forearm = new THREE.Group();
+                forearm.position.set(0, -0.27, 0);
+                upperArm.add(forearm);
+
+                const forearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.032, 0.26, 18), skin);
+                forearmMesh.position.set(0, -0.13, 0);
+                forearmMesh.castShadow = true;
+                forearm.add(forearmMesh);
+
+                // Wrist
+                const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.03, 0.04, 14), skin);
+                wrist.position.set(0, -0.26, 0);
+                forearm.add(wrist);
+
+                // -- HAND WITH ARTICULATED FINGERS --
+                const handGroup = new THREE.Group();
+                handGroup.position.set(0, -0.28, 0);
+                forearm.add(handGroup);
+
+                // Palm
+                const palm = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.065, 0.022), skin);
+                palm.position.y = -0.032;
+                palm.castShadow = true;
+                handGroup.add(palm);
+
+                // Thenar eminence (thumb muscle pad)
+                const thenar = new THREE.Mesh(new THREE.SphereGeometry(0.016, 14, 14), skin);
+                thenar.position.set(-s * 0.022, -0.02, 0.01);
+                handGroup.add(thenar);
+
+                // Thumb (opposable — 2 phalanges + opposable base joint)
+                const thumbGroup = new THREE.Group();
+                thumbGroup.position.set(-s * 0.030, -0.018, 0.014);
+                thumbGroup.rotation.set(0.4, -s * 0.7, s * 0.55);
+                handGroup.add(thumbGroup);
+
+                // Larger thumb geometry for visibility
+                const thumbP1 = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.012, 0.030, 10), skin);
+                thumbP1.position.y = -0.015;
+                thumbP1.castShadow = true;
+                thumbGroup.add(thumbP1);
+
+                const thumbJoint = new THREE.Mesh(new THREE.SphereGeometry(0.010, 10, 10), skin);
+                thumbJoint.position.y = -0.030;
+                thumbGroup.add(thumbJoint);
+
+                const thumbP2 = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.010, 0.024, 10), skin);
+                thumbP2.position.set(0, -0.042, 0.008);
+                thumbP2.rotation.x = -0.6;
+                thumbP2.castShadow = true;
+                thumbGroup.add(thumbP2);
+
+                const thumbTip = new THREE.Mesh(new THREE.SphereGeometry(0.0085, 10, 10), skin);
+                thumbTip.position.set(0, -0.054, 0.018);
+                thumbGroup.add(thumbTip);
+
+                // Four fingers with anatomically realistic joints
+                const fingers = [];
+                const fingerXs = [-0.020, -0.007, 0.007, 0.020];
+                const fingerLens = [0.045, 0.050, 0.046, 0.038];
+
+                for (let f = 0; f < 4; f++) {
+                    const finger = new THREE.Group();
+                    finger.position.set(s * fingerXs[f], -0.060, 0);
+                    finger.rotation.x = -1.4; // Default curled for grip
+                    handGroup.add(finger);
+                    fingers.push(finger);
+
+                    // Base Knuckle (larger for visibility)
+                    const knuckle = new THREE.Mesh(new THREE.SphereGeometry(0.010, 10, 10), skin);
+                    finger.add(knuckle);
+
+                    const p1Len = fingerLens[f] * 0.52;
+                    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, p1Len, 10), skin);
+                    p1.position.y = -p1Len * 0.5;
+                    p1.castShadow = true;
+                    finger.add(p1);
+
+                    // Mid Knuckle Joint
+                    const midJoint = new THREE.Mesh(new THREE.SphereGeometry(0.0085, 10, 10), skin);
+                    midJoint.position.y = -p1Len;
+                    finger.add(midJoint);
+
+                    const p2Len = fingerLens[f] * 0.44;
+                    const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.009, p2Len, 10), skin);
+                    p2.position.set(0, -p1Len - p2Len * 0.45, 0.008);
+                    p2.rotation.x = -0.85;
+                    p2.castShadow = true;
+                    finger.add(p2);
+
+                    // Fingertip
+                    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.0078, 10, 10), skin);
+                    tip.position.set(0, -p1Len - p2Len * 0.9, 0.016);
+                    finger.add(tip);
+                }
+
+                if (isL) {
+                    rig.leftShoulder = shoulder; rig.leftUpperArm = upperArm;
+                    rig.leftBicepMesh = bicep; rig.leftForearm = forearm;
+                    rig.leftHand = handGroup; rig.leftFingers = fingers;
+                    rig.leftThumb = thumbGroup;
+                } else {
+                    rig.rightShoulder = shoulder; rig.rightUpperArm = upperArm;
+                    rig.rightBicepMesh = bicep; rig.rightForearm = forearm;
+                    rig.rightHand = handGroup; rig.rightFingers = fingers;
+                    rig.rightThumb = thumbGroup;
+                }
+            });
+
+            // -- LEGS --
+            ['left', 'right'].forEach(side => {
+                const isL = side === 'left';
+                const s = isL ? 1 : -1;
+
+                const hip = new THREE.Group();
+                hip.position.set(s * 0.12, -0.08, 0);
+                pelvisGroup.add(hip);
+
+                const upperLeg = new THREE.Group();
+                hip.add(upperLeg);
+
+                const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.068, 0.44, 22), skin);
+                thigh.position.y = -0.22;
+                thigh.castShadow = true;
+                upperLeg.add(thigh);
+
+                // Vastus medialis (inner quad bulge)
+                const quadMat = isL ? PBR.muscleGroups.quadL : PBR.muscleGroups.quadR;
+                const vastus = new THREE.Mesh(new THREE.SphereGeometry(0.04, 14, 14), quadMat);
+                vastus.position.set(-s * 0.04, -0.36, 0.03);
+                upperLeg.add(vastus);
+
+                // Outer quad sweep
+                const outerQuad = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 14), quadMat);
+                outerQuad.position.set(s * 0.05, -0.28, 0.02);
+                upperLeg.add(outerQuad);
+
+                const lowerLeg = new THREE.Group();
+                lowerLeg.position.set(0, -0.44, 0);
+                upperLeg.add(lowerLeg);
+
+                // Patella
+                const patella = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), skin);
+                patella.position.set(0, 0, 0.04);
+                lowerLeg.add(patella);
+
+                // Calf (gastrocnemius)
+                const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.038, 0.42, 20), skin);
+                calf.position.set(0, -0.21, -0.018);
+                calf.castShadow = true;
+                lowerLeg.add(calf);
+
+                // Calf muscle bulge
+                const calfMat = isL ? PBR.muscleGroups.calfL : PBR.muscleGroups.calfR;
+                const calfBulge = new THREE.Mesh(new THREE.SphereGeometry(0.04, 14, 14), calfMat);
+                calfBulge.scale.set(0.9, 1.3, 0.8);
+                calfBulge.position.set(0, -0.12, -0.035);
+                lowerLeg.add(calfBulge);
+
+                // Foot / Sneaker
+                const footGroup = new THREE.Group();
+                footGroup.position.set(0, -0.42, 0.05);
+                lowerLeg.add(footGroup);
+
+                const sneakerBody = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.21), PBR.sneakerUpper);
+                sneakerBody.position.y = 0.02;
+                sneakerBody.castShadow = true;
+
+                // Toe cap (rounded)
+                const toeCap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 14), PBR.sneakerUpper);
+                toeCap.scale.set(1.0, 0.65, 0.5);
+                toeCap.position.set(0, 0.02, 0.10);
+
+                const sole = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.022, 0.22), PBR.sneakerSole);
+                sole.position.y = -0.02;
+                sole.receiveShadow = true;
+
+                // Accent stripe
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.025, 0.10), PBR.sneakerAccent);
+                stripe.position.set(s * 0.045, 0.025, 0.02);
+
+                footGroup.add(sneakerBody, toeCap, sole, stripe);
+
+                if (isL) {
+                    rig.leftUpperLeg = upperLeg; rig.leftLowerLeg = lowerLeg; rig.leftFoot = footGroup;
+                } else {
+                    rig.rightUpperLeg = upperLeg; rig.rightLowerLeg = lowerLeg; rig.rightFoot = footGroup;
+                }
+            });
+
+            return rig;
+        }
+
+        /* =========================================================================
+           5. EQUIPMENT
+           ========================================================================= */
+        function createDumbbell(kg) {
+            const g = new THREE.Group();
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.22, 20), PBR.chrome);
+            handle.castShadow = true;
+            g.add(handle);
+
+            const r = 0.07 + (kg / 100) * 0.05;
+            [-0.09, 0.09].forEach(y => {
+                const plate = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.05, 24), PBR.weightStack);
+                plate.position.y = y;
+                plate.castShadow = true;
+                g.add(plate);
+
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 0.85, 0.006, 10, 24), PBR.chrome);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = y + (y > 0 ? 0.026 : -0.026);
+                g.add(ring);
+            });
+            return g;
+        }
+
+        function createGobletDumbbell(kg) {
+            const g = new THREE.Group();
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.26, 20), PBR.chrome);
+            g.add(handle);
+            [-0.11, 0.11].forEach(y => {
+                const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.065, 24), PBR.weightStack);
+                plate.position.y = y;
+                plate.castShadow = true;
+                g.add(plate);
+            });
+            g.visible = false;
+            return g;
+        }
+
+        /* =========================================================================
+           6. SMOOTH EASING HELPERS
+           ========================================================================= */
+        function smoothstep(x) {
+            x = Math.max(0, Math.min(1, x));
+            return x * x * (3 - 2 * x);
+        }
+
+        function easeInOut(t) {
+            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        }
+
+        // 2-bone FABRIK Inverse Kinematics — aligns hand to a world-space target
+        // Used to snap the athlete's hand onto the station's grip, so the hand
+        // actually meets the bar/roller instead of floating in front of it.
+        // elbowHint is a world-space direction that biases which way the elbow bends
+        // (e.g. (0,-1,-0.4) bends elbow down-and-back like a natural chest press).
+        // wristOffset is a world-space vector that shifts the target AWAY from the
+        // bar/cylinder axis so the hand grips the bar FROM THE OUTSIDE rather than
+        // passing through it. E.g. for a horizontal bar at z=0.32 pointing along x,
+        // an offset of (0, 0, +0.04) places the wrist 4cm in front of the bar so
+        // the palm rests on top of the bar with fingers curling around it.
+        const UPPER_ARM_LEN = 0.27;
+        const FOREARM_LEN = 0.26;
+        const TOTAL_ARM_LEN = UPPER_ARM_LEN + FOREARM_LEN;
+
+        function alignArmToGrip(side, targetWorldPos, elbowHint, wristOffset) {
+            const r = athleteRig;
+            const shoulder = side === 'left' ? r.leftShoulder : r.rightShoulder;
+            const upperArm = side === 'left' ? r.leftUpperArm : r.rightUpperArm;
+            const forearm = side === 'left' ? r.leftForearm : r.rightForearm;
+
+            if (!shoulder || !upperArm || !forearm) return;
+            scene.updateMatrixWorld(true);
+
+            // 1. Get world-space joint positions
+            const shoulderWorld = new THREE.Vector3();
+            shoulder.getWorldPosition(shoulderWorld);
+
+            const elbowLocal = new THREE.Vector3(0, -UPPER_ARM_LEN, 0);
+            const elbowWorld = elbowLocal.clone();
+            upperArm.localToWorld(elbowWorld);
+
+            const handLocal = new THREE.Vector3(0, -FOREARM_LEN, 0);
+            const handWorld = handLocal.clone();
+            forearm.localToWorld(handWorld);
+
+            // 2. Apply wrist offset to push the target OUTSIDE the bar/cylinder
+            const t = targetWorldPos.clone();
+            if (wristOffset) t.add(wristOffset);
+
+            // 3. FABRIK iteration with elbow hint
+            let e = elbowWorld.clone();
+            let h = handWorld.clone();
+            const s = shoulderWorld.clone();
+            const L1 = UPPER_ARM_LEN;
+            const L2 = FOREARM_LEN;
+
+            const distToTarget = s.distanceTo(t);
+            const hint = elbowHint ? elbowHint.clone() : new THREE.Vector3(0, -1, -0.3);
+
+            if (distToTarget > TOTAL_ARM_LEN - 0.01) {
+                const dir = t.clone().sub(s).normalize();
+                e.copy(s).add(dir.clone().multiplyScalar(L1));
+                h.copy(s).add(dir.multiplyScalar(TOTAL_ARM_LEN));
+            } else {
+                for (let i = 0; i < 14; i++) {
+                    h.copy(t);
+                    const dirEH = e.clone().sub(h);
+                    if (dirEH.lengthSq() < 1e-8) dirEH.copy(hint);
+                    dirEH.normalize();
+                    e.copy(h).add(dirEH.multiplyScalar(L2));
+
+                    const dirSE = e.clone().sub(s);
+                    if (dirSE.lengthSq() < 1e-8) dirSE.copy(hint);
+                    dirSE.normalize();
+                    let eNew = s.clone().add(dirSE.multiplyScalar(L1));
+
+                    const st = t.clone().sub(s).normalize();
+                    const fromLine = eNew.clone().sub(s);
+                    const along = fromLine.dot(st);
+                    const perp = fromLine.clone().sub(st.clone().multiplyScalar(along));
+                    const hintFromLine = hint.clone().sub(st.clone().multiplyScalar(hint.dot(st)));
+                    if (perp.lengthSq() > 1e-6 && hintFromLine.lengthSq() > 1e-6) {
+                        const sign = (perp.dot(hintFromLine) < 0) ? -1 : 1;
+                        eNew = s.clone().add(st.clone().multiplyScalar(along)).add(hintFromLine.normalize().multiplyScalar(Math.sqrt(Math.max(0, L1*L1 - along*along)) * sign));
+                    }
+                    e.copy(eNew);
+                }
+            }
+
+            // 4. Compute and apply rotations
+            const downDir = new THREE.Vector3(0, -1, 0);
+
+            const upperDirWorld = e.clone().sub(s).normalize();
+            const shoulderWorldQuat = new THREE.Quaternion();
+            shoulder.getWorldQuaternion(shoulderWorldQuat);
+            const shoulderLocalQuat = shoulderWorldQuat.clone().invert();
+            const upperDirInShoulder = upperDirWorld.clone().applyQuaternion(shoulderLocalQuat);
+            const qUpper = new THREE.Quaternion().setFromUnitVectors(downDir, upperDirInShoulder);
+            upperArm.quaternion.copy(qUpper);
+
+            const foreDirWorld = h.clone().sub(e).normalize();
+            const upperArmWorldQuat = new THREE.Quaternion();
+            upperArm.getWorldQuaternion(upperArmWorldQuat);
+            const upperArmLocalQuat = upperArmWorldQuat.clone().invert();
+            const foreDirInUpper = foreDirWorld.clone().applyQuaternion(upperArmLocalQuat);
+            const qFore = new THREE.Quaternion().setFromUnitVectors(downDir, foreDirInUpper);
+            forearm.quaternion.copy(qFore);
+
+            // 5. Orient the FOREARM so the palm faces the bar/cylinder (perpendicular
+            // to the bar axis). Without this, the hand's default orientation is "down"
+            // and the palm may pass through the bar instead of resting on top of it.
+            // We add a roll (rotation around the forearm's local -y axis) so the hand
+            // wraps naturally around the grip.
+            if (wristOffset && wristOffset.length() > 0.001) {
+                // The forearm's local -y is now pointing toward the hand target.
+                // We want the palm to face the OPPOSITE of the wristOffset (i.e. toward
+                // the bar). Determine a roll angle from the offset's x/z components.
+                const sign = side === 'left' ? 1 : -1;
+                // The offset direction in the horizontal plane relative to the bar
+                const ox = wristOffset.x;
+                const oz = wristOffset.z;
+                // Roll so the palm (hand +z in local) faces -offset direction
+                const targetRoll = Math.atan2(ox, oz) + sign * 0.0;
+                forearm.rotateZ(targetRoll);
+            }
+        }
+
+        function getGripWorldPos(localOffset, attachTo) {
+            const wp = new THREE.Vector3(localOffset[0], localOffset[1], localOffset[2]);
+            attachTo.localToWorld(wp);
+            return wp;
+        }
+
+        /* =========================================================================
+           6B. STATION ANIMATION HELPERS (CABLES, WEIGHT STACK, MUSCLES, INJURIES)
+           ========================================================================= */
+
+        // Pulse a muscle group: amount is 0..1, mode is 'active' or 'synergist'
+        function pulseMuscle(groupName, amount) {
+            const m = PBR.muscleGroups[groupName];
+            if (!m) return;
+            m.emissiveIntensity = MUSCLE_BASE_INTENSITY + amount * 0.85;
+        }
+
+        // Reset all muscle groups to their default state (used in correct mode too, slowly)
+        function setMuscleGroupIntensity(groupNames, intensity) {
+            if (!groupNames) return;
+            groupNames.forEach(name => {
+                const m = PBR.muscleGroups[name];
+                if (!m) return;
+                m.emissiveIntensity = intensity;
+            });
+        }
+
+        // Reset all muscle highlights to baseline
+        function resetAllMuscles() {
+            for (const key in PBR.muscleGroups) {
+                PBR.muscleGroups[key].emissiveIntensity = MUSCLE_BASE_INTENSITY;
+            }
+        }
+
+        // Resize and reposition a vertical cable between two world Y values
+        function placeVerticalCable(cable, topY, bottomY) {
+            if (!cable) return;
+            const length = Math.max(0.02, topY - bottomY);
+            cable.scale.y = length / cable.userData.baseLen;
+            cable.position.y = (topY + bottomY) / 2;
+        }
+
+        // Lift the weight stack plates + selector by `amount` (0..0.06m typical)
+        function liftWeightStack(amount) {
+            const st = multiGymStation;
+            if (!st) return;
+            st.weightPlates.forEach(plate => {
+                plate.position.y = plate.userData.baseY + amount;
+            });
+            st.weightSep.forEach(sep => {
+                sep.position.y = sep.userData.baseY + amount;
+            });
+            if (st.topSelector) st.topSelector.position.y = st.topSelector.userData.baseY + amount;
+            if (st.selectorPin) st.selectorPin.position.y = st.selectorPin.userData.baseY + amount;
+        }
+
+        // Reset the weight stack to its rest position
+        function resetWeightStack() {
+            liftWeightStack(0);
+        }
+
+        // Create or refresh the 3D injury ring + label sprite at a given joint position
+        const INJURY_RING_POOL = [];
+        function showInjuryRings(joints) {
+            const st = multiGymStation;
+            if (!st) return;
+            // Clear old safely
+            [...st.injuryRings.children].forEach(c => {
+                if (c.userData.isInjury) {
+                    if (c.geometry && c.geometry.dispose) c.geometry.dispose();
+                    st.injuryRings.remove(c);
+                }
+            });
+            st.injuryRings.visible = false;
+
+            if (!joints || joints.length === 0) return;
+            st.injuryRings.visible = true;
+
+            joints.forEach(j => {
+                const [x, y, z] = j.pos;
+                // Outer pulse ring
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.10, 0.012, 8, 24),
+                    PBR.injuryRing
+                );
+                ring.position.set(x, y, z);
+                ring.userData.isInjury = true;
+                ring.userData.pulsePhase = Math.random() * Math.PI * 2;
+                st.injuryRings.add(ring);
+                // Inner glow ring
+                const inner = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.07, 0.018, 8, 24),
+                    PBR.injuryRingGlow
+                );
+                inner.position.set(x, y, z);
+                inner.userData.isInjury = true;
+                inner.userData.pulsePhase = Math.random() * Math.PI * 2;
+                st.injuryRings.add(inner);
+                // Label sprite
+                const label = makeTextSprite(j.label, j.risk || '');
+                label.position.set(x, y + 0.20, z);
+                label.userData.isInjury = true;
+                st.injuryRings.add(label);
+            });
+        }
+
+        function hideInjuryRings() {
+            const st = multiGymStation;
+            if (!st) return;
+            st.injuryRings.visible = false;
+        }
+
+        function makeTextSprite(text, sub) {
+            const canvas = document.createElement('canvas');
+            const w = 256, h = 96;
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            // Background
+            ctx.fillStyle = 'rgba(127, 29, 29, 0.85)';
+            ctx.roundRect(0, 0, w, h, 16);
+            ctx.fill();
+            // Border
+            ctx.strokeStyle = 'rgba(251, 113, 133, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.roundRect(0, 0, w, h, 16);
+            ctx.stroke();
+            // Main text
+            ctx.fillStyle = '#fca5a5';
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚠ ' + text, w / 2, 36);
+            // Sub text
+            if (sub) {
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '18px Inter, sans-serif';
+                ctx.fillText(sub, w / 2, 70);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.45, 0.17, 1);
+            return sprite;
+        }
+
+        // Polyfill for roundRect (older browsers)
+        if (CanvasRenderingContext2D && !CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.lineTo(x + w - r, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r);
+                this.lineTo(x + w, y + h - r);
+                this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                this.lineTo(x + r, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r);
+                this.lineTo(x, y + r);
+                this.quadraticCurveTo(x, y, x + r, y);
+                this.closePath();
+                return this;
+            };
+        }
+
+        /* =========================================================================
+           7. KINEMATICS ENGINE (SMOOTH & NATURAL)
+           ========================================================================= */
+        function updateExerciseKinematics(progress, isCorrect) {
+            if (!athleteRig || !multiGymStation) return;
+            resetAthletePose();
+            resetAllMuscles();
+            resetWeightStack();
+
+            // Natural rep cadence with smooth easing
+            let cycle = 0;
+            let phaseText = "";
+
+            if (progress < 0.42) {
+                cycle = smoothstep(progress / 0.42);
+                phaseText = "Eksentrik (Nəzarətli Enmə)";
+            } else if (progress <= 0.58) {
+                cycle = 1.0;
+                phaseText = "Zirvə Gərilmə (İzometrik)";
+            } else {
+                cycle = 1.0 - smoothstep((progress - 0.58) / 0.42);
+                phaseText = "Konsentrik (Yığılma)";
+            }
+
+            document.getElementById('motion-phase-badge').innerText = phaseText;
+
+            const ex = EXERCISES[currentExerciseKey];
+            const isStation = ex.type === 'station';
+            const isGoblet = currentExerciseKey === 'goblet_squat';
+
+            dumbbellL.visible = !isStation && !isGoblet;
+            dumbbellR.visible = !isStation && !isGoblet;
+            singleHeavyDumbbell.visible = isGoblet;
+
+            // 3D Injury rings: only show in mistake mode for exercises that define injuryJoints
+            if (!isCorrect && ex.injuryJoints && ex.injuryJoints.length > 0) {
+                showInjuryRings(ex.injuryJoints);
+            } else {
+                hideInjuryRings();
+            }
+
+            // Apply breathing to chest
+            const breathScale = 1.0 + Math.sin(breathPhase) * 0.012;
+            athleteRig.chestMesh.scale.set(1.0, breathScale, breathScale);
+
+            switch (currentExerciseKey) {
+                case 'station_chest_press': solveChestPress(cycle, isCorrect); break;
+                case 'station_lat_pulldown': solveLatPulldown(cycle, isCorrect); break;
+                case 'station_leg_extension': solveLegExtension(cycle, isCorrect); break;
+                case 'goblet_squat': solveGobletSquat(cycle, isCorrect); break;
+                case 'dumbbell_shoulder_press': solveShoulderPress(cycle, isCorrect); break;
+                case 'dumbbell_rdl': solveRDL(cycle, isCorrect); break;
+                case 'dumbbell_biceps_curl': solveBicepsCurl(cycle, isCorrect); break;
+                case 'dumbbell_lateral_raise': solveLateralRaise(cycle, isCorrect); break;
+                case 'station_pec_fly': solvePecFly(cycle, isCorrect); break;
+                case 'station_triceps_pushdown': solveTricepsPushdown(cycle, isCorrect); break;
+                case 'station_seated_row': solveSeatedRow(cycle, isCorrect); break;
+                case 'dumbbell_hammer_curl': solveHammerCurl(cycle, isCorrect); break;
+                case 'dumbbell_walking_lunge': solveWalkingLunge(cycle, isCorrect); break;
+            }
+        }
+
+        // -- STATION CHEST PRESS --
+        function solveChestPress(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.56, 0.16);
+            r.spine.rotation.x = -0.05;
+
+            // Natural 90-degree seated leg position (feet firmly on ground)
+            r.leftUpperLeg.rotation.set(-1.46, 0.12, 0);
+            r.leftLowerLeg.rotation.x = 1.48;
+            r.rightUpperLeg.rotation.set(-1.46, -0.12, 0);
+            r.rightLowerLeg.rotation.x = 1.48;
+
+            multiGymStation.pressArms.rotation.x = c * 0.30;
+            liftWeightStack(easeInOut(c) * 0.05);
+
+            setFingerCurl(r, 1.4);
+
+            if (ok) {
+                updateTelemetry(`${Math.round(75 + c * 85)}°`, "55° Təhlükəsiz", "Arxalığa Bitişik");
+                setMuscleGroupIntensity(['pecMajorL', 'pecMajorR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR', 'deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.35);
+            } else {
+                updateTelemetry(`${Math.round(75 + c * 75)}°`, "90° Zədəli ⚠", "Kürək Açıq ⚠");
+                setMuscleGroupIntensity(['pecMajorL', 'pecMajorR'], MUSCLE_BASE_INTENSITY + 0.5);
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.45);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.7);
+            }
+
+            // IK: snap hands to the station's horizontal grip world position
+            // Elbow hint pushes elbow DOWN and BACK (natural chest-press elbow path)
+            // wristOffset pushes wrist FORWARD of the bar (positive Z) so the palm
+            // rests ON TOP of the bar instead of the bar passing through the hand
+            const chestHint = new THREE.Vector3(0, -1, -0.4);
+            const chestOffset = new THREE.Vector3(0, 0, 0.05);
+            const leftGrip = getGripWorldPos([0.06, -0.10, 0.42], multiGymStation.pecFlyArms.left);
+            const rightGrip = getGripWorldPos([-0.06, -0.10, 0.42], multiGymStation.pecFlyArms.right);
+            alignArmToGrip('left', leftGrip, chestHint, chestOffset);
+            alignArmToGrip('right', rightGrip, chestHint, chestOffset);
+        }
+
+        // -- STATION LAT PULLDOWN --
+        function solveLatPulldown(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.56, 0.18);
+            // Seated legs comfortably under machine foam rollers
+            r.leftUpperLeg.rotation.set(-1.46, 0.12, 0);
+            r.leftLowerLeg.rotation.x = 1.48;
+            r.rightUpperLeg.rotation.set(-1.46, -0.12, 0);
+            r.rightLowerLeg.rotation.x = 1.48;
+
+            const latBarY = 1.83 - easeInOut(c) * 0.42;
+            multiGymStation.latBar.position.y = latBarY;
+
+            // Animate the cable from pulley to lat bar
+            placeVerticalCable(multiGymStation.cables.up, 1.94, latBarY + 0.10);
+
+            // Lift weight stack during the pull
+            liftWeightStack(easeInOut(c) * 0.045);
+
+            setFingerCurl(r, 1.5);
+
+            if (ok) {
+                r.spine.rotation.x = -0.18;
+                updateTelemetry(`${Math.round(165 - c * 95)}°`, "15° Təbii Meyl", "Kürəklər Sıxılı");
+                setMuscleGroupIntensity(['latL', 'latR', 'bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.6);
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.18);
+            } else {
+                r.spine.rotation.x = -0.22 - easeInOut(c) * 0.45;
+                updateTelemetry(`${Math.round(165 - c * 75)}°`, "-45° Artıq ⚠", "Onurğa Gərgin ⚠");
+                setMuscleGroupIntensity(['latL', 'latR'], MUSCLE_BASE_INTENSITY + 0.5);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setFingerCurl(r, 1.4);
+            }
+
+            // IK: snap hands to lat bar grip caps at the bar's current world position
+            // Lat pulldown: elbows flare OUT and DOWN, pulling the bar to the chest
+            // wristOffset drops the wrist SLIGHTLY BELOW the bar so the bar passes
+            // through the palm, fingers curl up around it (real top-down grip)
+            const latHint = new THREE.Vector3(0, -0.6, 0.3);
+            const latOffset = new THREE.Vector3(0, -0.03, 0);
+            const latBarObj = multiGymStation.latBar;
+            const leftGrip = getGripWorldPos([-0.65, -0.12, 0], latBarObj);
+            const rightGrip = getGripWorldPos([0.65, -0.12, 0], latBarObj);
+            alignArmToGrip('left', leftGrip, latHint, latOffset);
+            alignArmToGrip('right', rightGrip, latHint, latOffset);
+        }
+
+        // -- STATION LEG EXTENSION --
+        function solveLegExtension(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.56, 0.20);
+            r.spine.rotation.x = 0;
+
+            r.leftUpperLeg.rotation.set(-1.46, 0.12, 0);
+            r.rightUpperLeg.rotation.set(-1.46, -0.12, 0);
+
+            setFingerCurl(r, 1.2);
+
+            const ext = easeInOut(c) * 1.35;
+            r.leftLowerLeg.rotation.x = 1.48 - ext;
+            r.rightLowerLeg.rotation.x = 1.48 - ext;
+            multiGymStation.legDeveloper.rotation.x = -ext;
+            liftWeightStack(easeInOut(c) * 0.04);
+
+            if (ok) {
+                updateTelemetry(`${Math.round(90 + c * 85)}°`, "100% Kvadriseps", "Çanaq Sabit");
+                setMuscleGroupIntensity(['quadL', 'quadR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['calfL', 'calfR'], MUSCLE_BASE_INTENSITY + 0.15);
+            } else {
+                r.pelvis.position.y = 0.56 + easeInOut(c) * 0.05;
+                updateTelemetry(`${Math.round(90 + c * 80)}°`, "Zərbəli ⚠", "Çanaq Qalxır ⚠");
+                setMuscleGroupIntensity(['quadL', 'quadR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.5);
+            }
+
+            // IK: hands rest on side handles of the leg developer (yuxarı çarpaz)
+            // Leg extension: arms relaxed at sides, hands gripping the seat handles
+            // wristOffset drops the wrist so it wraps around the crossbar from above
+            const legHint = new THREE.Vector3(0, -1, 0);
+            const legOffset = new THREE.Vector3(0, -0.04, 0);
+            const legDev = multiGymStation.legDeveloper;
+            const leftHandle = getGripWorldPos([-0.24, 0, 0.04], legDev);
+            const rightHandle = getGripWorldPos([0.24, 0, 0.04], legDev);
+            alignArmToGrip('left', leftHandle, legHint, legOffset);
+            alignArmToGrip('right', rightHandle, legHint, legOffset);
+        }
+
+        // -- GOBLET SQUAT --
+        function solveGobletSquat(c, ok) {
+            const r = athleteRig;
+            const ec = easeInOut(c);
+            // Move the athlete further forward in front of the station to prevent body clipping
+            r.pelvis.position.set(0, 0.96 - ec * 0.42, 1.05 - ec * 0.10);
+
+            if (ok) {
+                r.spine.rotation.x = ec * 0.34;
+                r.leftUpperLeg.rotation.set(-ec * 1.40, 0.22, 0);
+                r.leftLowerLeg.rotation.x = ec * 1.52;
+                r.rightUpperLeg.rotation.set(-ec * 1.40, -0.22, 0);
+                r.rightLowerLeg.rotation.x = ec * 1.52;
+                updateTelemetry(`${Math.round(175 - c * 88)}°`, `${Math.round(180 - c * 95)}°`, "20° Neytral");
+                // Bio-light: Quads + Glutes + Calves
+                setMuscleGroupIntensity(['quadL', 'quadR', 'gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['calfL', 'calfR'], MUSCLE_BASE_INTENSITY + 0.25);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.3);
+            } else {
+                r.spine.rotation.x = ec * 0.70;
+                r.leftUpperLeg.rotation.set(-ec * 1.28, 0, -ec * 0.42);
+                r.leftLowerLeg.rotation.x = ec * 1.34;
+                r.rightUpperLeg.rotation.set(-ec * 1.28, 0, ec * 0.42);
+                r.rightLowerLeg.rotation.x = ec * 1.34;
+                updateTelemetry(`${Math.round(175 - c * 80)}° ⚠`, "Valgus ⚠", "40° Donqar ⚠");
+                // Bio-light: same primary, but abs overworking due to rounding
+                setMuscleGroupIntensity(['quadL', 'quadR', 'gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.7);
+            }
+
+            r.leftUpperArm.rotation.set(0.75, 0, -0.35);
+            r.leftForearm.rotation.set(-1.42, 0, 0.15);
+            r.rightUpperArm.rotation.set(0.75, 0, 0.35);
+            r.rightForearm.rotation.set(-1.42, 0, -0.15);
+            setFingerCurl(r, 1.5);
+
+            singleHeavyDumbbell.position.set(0, r.pelvis.position.y + 0.38, r.pelvis.position.z + 0.22);
+        }
+
+        // -- SHOULDER PRESS --
+        function solveShoulderPress(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.96, 1.10);
+            const ec = easeInOut(c);
+
+            if (ok) {
+                const raise = 1.42 + ec * 1.42;
+                r.leftUpperArm.rotation.set(0.15, 0, -raise);
+                r.leftForearm.rotation.set(0, 0, ec * 0.62);
+                r.rightUpperArm.rotation.set(0.15, 0, raise);
+                r.rightForearm.rotation.set(0, 0, -ec * 0.62);
+                updateTelemetry(`${Math.round(85 + c * 90)}°`, `${Math.round(75 + c * 100)}°`, "Sabit Core");
+                // Bio-light: Deltoids + Triceps
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR', 'tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['pecMajorL', 'pecMajorR'], MUSCLE_BASE_INTENSITY + 0.18);
+            } else {
+                r.spine.rotation.x = -ec * 0.40;
+                const raise = 1.32 + ec * 1.38;
+                r.leftUpperArm.rotation.set(-0.35, 0, -raise);
+                r.rightUpperArm.rotation.set(-0.35, 0, raise);
+                updateTelemetry(`${Math.round(85 + c * 85)}°`, "90° Sıxılma ⚠", "-24° Lordoz ⚠");
+                // Bio-light: same muscles, plus abs overworking due to lordosis
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR', 'tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.6);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.5);
+            }
+            setFingerCurl(r, 1.2);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        // -- RDL --
+        function solveRDL(c, ok) {
+            const r = athleteRig;
+            const ec = easeInOut(c);
+            r.pelvis.position.set(0, 0.96 - ec * 0.10, 1.10 - ec * 0.20);
+
+            if (ok) {
+                r.spine.rotation.x = ec * 1.12;
+                r.leftUpperLeg.rotation.x = -ec * 0.33;
+                r.leftLowerLeg.rotation.x = ec * 0.36;
+                r.rightUpperLeg.rotation.x = -ec * 0.33;
+                r.rightLowerLeg.rotation.x = ec * 0.36;
+                r.leftUpperArm.rotation.x = -ec * 1.02;
+                r.rightUpperArm.rotation.x = -ec * 1.02;
+                updateTelemetry("162° Sabit Diz", `${Math.round(180 - c * 78)}° Hinge`, "100% Neytral");
+                // Bio-light: Hamstrings + Glutes + Lower Back
+                setMuscleGroupIntensity(['gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.5);
+            } else {
+                r.pelvis.position.z = 1.10;
+                r.spine.rotation.x = ec * 1.38;
+                r.leftUpperArm.rotation.x = -ec * 0.68;
+                r.rightUpperArm.rotation.x = -ec * 0.68;
+                updateTelemetry("180° Kilidli", "35° Qüsurlu", "55° Donqar ⚠");
+                // Bio-light: glutes still, but spine erectors overloaded
+                setMuscleGroupIntensity(['gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.5);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.8);
+            }
+            setFingerCurl(r, 1.2);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        // -- BICEPS CURL --
+        function solveBicepsCurl(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.96, 1.10);
+            const ec = easeInOut(c);
+
+            if (ok) {
+                r.leftUpperArm.rotation.set(0.08, 0, 0.05);
+                r.rightUpperArm.rotation.set(0.08, 0, -0.05);
+                const flex = ec * 1.88;
+                r.leftForearm.rotation.set(flex, 0, ec * 0.32);
+                r.rightForearm.rotation.set(flex, 0, -ec * 0.32);
+                const bulge = 1.0 + ec * 0.3;
+                r.leftBicepMesh.scale.set(0.85 * bulge, 1.4, 0.9 * bulge);
+                r.rightBicepMesh.scale.set(0.85 * bulge, 1.4, 0.9 * bulge);
+                updateTelemetry(`${Math.round(155 - c * 105)}°`, `${Math.round(8 + c * 4)}°`, "Neytral Core");
+                // Bio-light: Biceps primary
+                setMuscleGroupIntensity(['bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.75);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.2);
+            } else {
+                r.spine.rotation.x = -ec * 0.30;
+                r.leftUpperArm.rotation.set(-ec * 0.42, 0, 0);
+                r.rightUpperArm.rotation.set(-ec * 0.42, 0, 0);
+                r.leftForearm.rotation.x = ec * 1.55;
+                r.rightForearm.rotation.x = ec * 1.55;
+                updateTelemetry(`${Math.round(155 - c * 70)}°`, "-25° Yellənmə", "18° Donqar");
+                // Bio-light: Biceps + spinal erectors due to swing
+                setMuscleGroupIntensity(['bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.6);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.5);
+            }
+            setFingerCurl(r, 1.3);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        // -- LATERAL RAISE --
+        function solveLateralRaise(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.96, 1.10);
+            const ec = easeInOut(c);
+
+            if (ok) {
+                const raise = ec * 1.45;
+                r.leftUpperArm.rotation.set(0.20, 0, -raise);
+                r.leftForearm.rotation.x = 0.15;
+                r.rightUpperArm.rotation.set(0.20, 0, raise);
+                r.rightForearm.rotation.x = 0.15;
+                updateTelemetry(`${Math.round(c * 90)}° Çiyin`, "165° Təbii", "Sabit Gövdə");
+                // Bio-light: Lateral Deltoid primary
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.15);
+            } else {
+                r.spine.rotation.x = -ec * 0.24;
+                const raise = ec * 1.32;
+                r.leftUpperArm.rotation.set(-0.25, 0, -raise);
+                r.rightUpperArm.rotation.set(-0.25, 0, raise);
+                updateTelemetry(`${Math.round(c * 75)}° ⚠`, "Qeyri-dəqiq", "Trapez Gərgin ⚠");
+                // Bio-light: deltoid but traps compensating
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.4);
+            }
+            setFingerCurl(r, 1.1);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        // -- STATION PEC DECK FLY (BUTTERFLY) --
+        function solvePecFly(c, ok) {
+            const r = athleteRig;
+            // Seated upright, hands grip the vertical pec rollers on each side
+            r.pelvis.position.set(0, 0.56, 0.16);
+            r.spine.rotation.x = -0.04;
+
+            // Seated 90° legs
+            r.leftUpperLeg.rotation.set(-1.46, 0.12, 0);
+            r.leftLowerLeg.rotation.x = 1.48;
+            r.rightUpperLeg.rotation.set(-1.46, -0.12, 0);
+            r.rightLowerLeg.rotation.x = 1.48;
+
+            // The butterfly arms rotate inward (squeeze) at peak
+            const squeeze = easeInOut(c) * 0.55;
+            if (multiGymStation.pecFlyArms.left) {
+                multiGymStation.pecFlyArms.left.rotation.z = -squeeze;
+            }
+            if (multiGymStation.pecFlyArms.right) {
+                multiGymStation.pecFlyArms.right.rotation.z = squeeze;
+            }
+            liftWeightStack(easeInOut(c) * 0.045);
+
+            setFingerCurl(r, ok ? 1.4 : 1.3);
+
+            if (ok) {
+                updateTelemetry(`${Math.round(40 + c * 50)}° Sıxılma`, "Pec Tam Sıxıldı", "Bel Arxalığa Bitişik");
+                setMuscleGroupIntensity(['pecMajorL', 'pecMajorR'], MUSCLE_BASE_INTENSITY + 0.85);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.2);
+            } else {
+                updateTelemetry(`${Math.round(40 + c * 60)}° ⚠`, "Dirsək Kilidli ⚠", "Onurğa Ayrılıb ⚠");
+                setMuscleGroupIntensity(['pecMajorL', 'pecMajorR'], MUSCLE_BASE_INTENSITY + 0.6);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.7);
+            }
+
+            // IK: snap hands to the vertical pec rollers' center (vertRoller is at y=-0.06, z=0.32, x=sign*0.06 in armSide-local)
+            // Pec fly: elbows stay slightly bent, hugging the rollers in
+            // wristOffset pushes wrist FORWARD of the roller so palm rests on the
+            // outer face of the vertical foam cylinder
+            const pecHint = new THREE.Vector3(0, -0.6, -0.3);
+            const pecOffset = new THREE.Vector3(0, 0, 0.06);
+            const leftArm = multiGymStation.pecFlyArms.left;
+            const rightArm = multiGymStation.pecFlyArms.right;
+            if (leftArm && rightArm) {
+                const leftGrip = getGripWorldPos([0.06, -0.06, 0.32], leftArm);
+                const rightGrip = getGripWorldPos([-0.06, -0.06, 0.32], rightArm);
+                alignArmToGrip('left', leftGrip, pecHint, pecOffset);
+                alignArmToGrip('right', rightGrip, pecHint, pecOffset);
+            }
+        }
+
+        // -- STATION TRICEPS PUSHDOWN (ROPE) --
+        function solveTricepsPushdown(c, ok) {
+            const r = athleteRig;
+            // Standing tall in front of the high pulley
+            r.pelvis.position.set(0, 0.96, 0.85);
+            r.spine.rotation.x = 0;
+
+            setFingerCurl(r, 1.4);
+
+            // Lat bar moves down with the rope; cable extends accordingly
+            const ropeBarY = 1.45 - easeInOut(c) * 0.45;
+            multiGymStation.latBar.position.y = ropeBarY;
+            placeVerticalCable(multiGymStation.cables.up, 1.94, ropeBarY + 0.10);
+            liftWeightStack(easeInOut(c) * 0.04);
+
+            if (ok) {
+                updateTelemetry(`${Math.round(165 - c * 140)}°`, "Dirsəklər Sabit", "Gövdə Düz");
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.85);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.15);
+            } else {
+                r.spine.rotation.x = -easeInOut(c) * 0.18;
+                updateTelemetry(`${Math.round(165 - c * 110)}°`, "Dirsək Açılır ⚠", "Gövdə Yellənir ⚠");
+                setMuscleGroupIntensity(['tricepsL', 'tricepsR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.6);
+            }
+
+            // IK: snap hands to the rope ends at lat bar position (split slightly L/R)
+            // Triceps pushdown: upper arms pinned to sides, elbows don't flare
+            // wristOffset drops the wrist so the rope hangs in front of the palm
+            const triHint = new THREE.Vector3(0, -1, 0.1);
+            const triOffset = new THREE.Vector3(0, -0.04, 0);
+            const latBarObj = multiGymStation.latBar;
+            const gripOffsetX = 0.18;
+            const leftGrip = getGripWorldPos([-gripOffsetX, -0.10, 0], latBarObj);
+            const rightGrip = getGripWorldPos([gripOffsetX, -0.10, 0], latBarObj);
+            alignArmToGrip('left', leftGrip, triHint, triOffset);
+            alignArmToGrip('right', rightGrip, triHint, triOffset);
+        }
+
+        // -- STATION SEATED CABLE ROW (LOW BLOCK) --
+        function solveSeatedRow(c, ok) {
+            const r = athleteRig;
+            // Seated on the floor with legs forward, slight forward lean
+            r.pelvis.position.set(0, 0.46, 0.55);
+            const ec = easeInOut(c);
+
+            // Forward lean (eccentric = more leaned, concentric = upright)
+            r.spine.rotation.x = 0.25 - ec * 0.30;
+
+            // Legs extended forward
+            r.leftUpperLeg.rotation.set(-1.10, 0.10, 0);
+            r.leftLowerLeg.rotation.x = 0.20;
+            r.rightUpperLeg.rotation.set(-1.10, -0.10, 0);
+            r.rightLowerLeg.rotation.x = 0.20;
+
+            setFingerCurl(r, 1.4);
+
+            // The bar rises as it's pulled toward the chest
+            const barY = 0.65 + ec * 0.30;
+            multiGymStation.latBar.position.y = barY;
+            placeVerticalCable(multiGymStation.cables.up, 1.94, barY);
+            placeVerticalCable(multiGymStation.cables.down, 0.05, barY - 0.05);
+            liftWeightStack(ec * 0.045);
+
+            if (ok) {
+                updateTelemetry(`${Math.round(15 + c * 70)}° Dartış`, "Kürək Sıxılı", "Bel Sabit");
+                setMuscleGroupIntensity(['latL', 'latR', 'bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.25);
+            } else {
+                r.spine.rotation.x = 0.40 - ec * 0.15;
+                updateTelemetry(`${Math.round(15 + c * 90)}° ⚠`, "Kürək Açıq ⚠", "Bel Yellənir ⚠");
+                setMuscleGroupIntensity(['latL', 'latR'], MUSCLE_BASE_INTENSITY + 0.5);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.7);
+            }
+
+            // IK: snap hands to the V-bar grip points at the bar's current world position
+            // Seated row: elbows pulled BACK, hugging the torso
+            // wristOffset drops the wrist so the V-bar sits in the palm
+            const rowHint = new THREE.Vector3(0, -0.5, -0.6);
+            const rowOffset = new THREE.Vector3(0, -0.04, 0);
+            const latBarObj = multiGymStation.latBar;
+            const gripOffsetX = 0.18;
+            const leftGrip = getGripWorldPos([-gripOffsetX, -0.08, 0], latBarObj);
+            const rightGrip = getGripWorldPos([gripOffsetX, -0.08, 0], latBarObj);
+            alignArmToGrip('left', leftGrip, rowHint, rowOffset);
+            alignArmToGrip('right', rightGrip, rowHint, rowOffset);
+        }
+
+        // -- DUMBBELL HAMMER CURL (neutral grip) --
+        function solveHammerCurl(c, ok) {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.96, 1.10);
+            const ec = easeInOut(c);
+
+            if (ok) {
+                // Upper arms locked to sides (no pronation)
+                r.leftUpperArm.rotation.set(0.10, 0, 0.05);
+                r.rightUpperArm.rotation.set(0.10, 0, -0.05);
+                const flex = ec * 1.78;
+                r.leftForearm.rotation.set(flex, 0, 0);
+                r.rightForearm.rotation.set(flex, 0, 0);
+                const bulge = 1.0 + ec * 0.28;
+                r.leftBicepMesh.scale.set(0.85 * bulge, 1.4, 0.9 * bulge);
+                r.rightBicepMesh.scale.set(0.85 * bulge, 1.4, 0.9 * bulge);
+                updateTelemetry(`${Math.round(155 - c * 100)}°`, "Neytral Tutuş", "Dirsəklər Sabit");
+                // Bio-light: Brachialis + Biceps (Hammer emphasises brachialis/forearm)
+                setMuscleGroupIntensity(['bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['deltoidL', 'deltoidR'], MUSCLE_BASE_INTENSITY + 0.2);
+            } else {
+                r.spine.rotation.x = -ec * 0.25;
+                r.leftUpperArm.rotation.set(-ec * 0.38, 0, 0);
+                r.rightUpperArm.rotation.set(-ec * 0.38, 0, 0);
+                r.leftForearm.rotation.x = ec * 1.45;
+                r.rightForearm.rotation.x = ec * 1.45;
+                updateTelemetry(`${Math.round(155 - c * 70)}°`, "Beli Yelləyir ⚠", "Dirsəklər Sürüşür");
+                setMuscleGroupIntensity(['bicepsL', 'bicepsR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.45);
+            }
+            setFingerCurl(r, 1.3);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        // -- DUMBBELL WALKING LUNGE (simplified split squat in place) --
+        function solveWalkingLunge(c, ok) {
+            const r = athleteRig;
+            const ec = easeInOut(c);
+            // Eccentric = standing, Concentric = lowered into split stance
+            r.pelvis.position.set(0, 0.96 - ec * 0.32, 1.10 - ec * 0.05);
+
+            if (ok) {
+                // Front leg bent 90°, back leg extended
+                r.leftUpperLeg.rotation.set(-ec * 1.35, 0.18, 0);
+                r.leftLowerLeg.rotation.x = ec * 1.40;
+                r.rightUpperLeg.rotation.set(-ec * 0.90, -0.18, 0);
+                r.rightLowerLeg.rotation.x = ec * 0.40;
+                r.spine.rotation.x = ec * 0.15;
+                updateTelemetry(`${Math.round(175 - c * 90)}° Ön Diz`, `${Math.round(180 - c * 100)}° Arxa Diz`, "Gövdə Dik");
+                // Bio-light: Quads + Glutes
+                setMuscleGroupIntensity(['quadL', 'quadR', 'gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['calfL', 'calfR'], MUSCLE_BASE_INTENSITY + 0.2);
+            } else {
+                // Knee caves in / forward knee over toe
+                r.leftUpperLeg.rotation.set(-ec * 1.20, 0, -ec * 0.35);
+                r.leftLowerLeg.rotation.x = ec * 1.55;
+                r.rightUpperLeg.rotation.set(-ec * 0.95, 0, ec * 0.20);
+                r.rightLowerLeg.rotation.x = ec * 0.55;
+                r.spine.rotation.x = ec * 0.45;
+                updateTelemetry(`${Math.round(175 - c * 80)}° ⚠`, "Diz Valgus ⚠", "Gövdə Önə ⚠");
+                setMuscleGroupIntensity(['quadL', 'quadR'], MUSCLE_BASE_INTENSITY + 0.55);
+                setMuscleGroupIntensity(['gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.5);
+                setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.6);
+            }
+            // Hold dumbbells at sides
+            r.leftUpperArm.rotation.set(0.10, 0, -0.05);
+            r.leftForearm.rotation.x = 0.20;
+            r.rightUpperArm.rotation.set(0.10, 0, 0.05);
+            r.rightForearm.rotation.x = 0.20;
+            setFingerCurl(r, 1.3);
+            syncEquipToHand(r.leftHand, dumbbellL);
+            syncEquipToHand(r.rightHand, dumbbellR);
+        }
+
+        /* =========================================================================
+           8. EQUIPMENT SYNC & HELPERS
+           ========================================================================= */
+        function syncEquipToHand(handGroup, equip) {
+            scene.updateMatrixWorld(true);
+            const wp = new THREE.Vector3();
+            const wq = new THREE.Quaternion();
+            handGroup.getWorldPosition(wp);
+            handGroup.getWorldQuaternion(wq);
+            equip.position.copy(wp);
+            equip.position.y -= 0.03;
+            equip.quaternion.copy(wq);
+            equip.rotateZ(Math.PI / 2);
+        }
+
+        function setFingerCurl(rig, amount) {
+            // 4 fingers wrap DOWN around the bar/handle (negative x rotation)
+            const curl = -Math.max(0.5, Math.min(1.8, amount));
+            rig.leftFingers.forEach(f => { f.rotation.x = curl; });
+            rig.rightFingers.forEach(f => { f.rotation.x = curl; });
+            // Thumb wraps in OPPOSITE direction (power grip) — presses against the
+            // side of the bar from the other side, like a real human gripping a bar.
+            // The amount is moderate so the thumb meets the index/middle fingers
+            // around the cylinder without unrealistic overlap.
+            const thumbCurl = Math.max(0.4, Math.min(1.3, amount * 0.8));
+            if (rig.leftThumb) {
+                // Left thumb (s=+1, sits on right side of left palm) — rotates around Z
+                // to curl toward the bar from the right/inside
+                rig.leftThumb.rotation.z = thumbCurl;
+            }
+            if (rig.rightThumb) {
+                // Right thumb (s=-1) — opposite Z rotation to mirror the curl
+                rig.rightThumb.rotation.z = -thumbCurl;
+            }
+        }
+
+        // Anatomical grip wrap — modulates finger curl based on grip radius so the
+        // fingertips actually contact the cylinder surface, not float past it.
+        // gripRadius is in metres; typical values: bar ≈ 0.014, dumbbell handle ≈ 0.014,
+        // pec roller ≈ 0.052, lat-bar grip cap ≈ 0.018.
+        function setAnatomicalGrip(rig, gripRadius) {
+            // Thinner bar → fingers curl MORE (tight fist around a thin handle)
+            // Thicker bar → fingers curl LESS (open palm around a fat roller)
+            // amount 1.0 ≈ 14mm bar; amount 0.6 ≈ 50mm roller
+            const amount = Math.max(0.55, Math.min(1.6, 1.4 - gripRadius * 14));
+            setFingerCurl(rig, amount);
+        }
+
+        function resetAthletePose() {
+            const r = athleteRig;
+            r.pelvis.position.set(0, 0.96, 0);
+            r.pelvis.rotation.set(0, 0, 0);
+            r.spine.rotation.set(0, 0, 0);
+            r.chest.position.set(0, 0.22, 0);
+            r.chest.rotation.set(0, 0, 0);
+            r.head.rotation.set(0, 0, 0);
+
+            r.leftUpperArm.rotation.set(0, 0, 0);
+            r.rightUpperArm.rotation.set(0, 0, 0);
+            r.leftForearm.rotation.set(0, 0, 0);
+            r.rightForearm.rotation.set(0, 0, 0);
+
+            r.leftUpperLeg.rotation.set(0, 0, 0);
+            r.rightUpperLeg.rotation.set(0, 0, 0);
+            r.leftLowerLeg.rotation.set(0, 0, 0);
+            r.rightLowerLeg.rotation.set(0, 0, 0);
+
+            r.leftBicepMesh.scale.set(0.85, 1.4, 0.9);
+            r.rightBicepMesh.scale.set(0.85, 1.4, 0.9);
+
+            multiGymStation.pressArms.rotation.x = 0;
+            multiGymStation.latBar.position.y = 1.83;
+            multiGymStation.legDeveloper.rotation.x = 0;
+            if (multiGymStation.pecFlyArms) {
+                if (multiGymStation.pecFlyArms.left) multiGymStation.pecFlyArms.left.rotation.z = 0;
+                if (multiGymStation.pecFlyArms.right) multiGymStation.pecFlyArms.right.rotation.z = 0;
+            }
+            if (multiGymStation.cables && multiGymStation.cables.up) {
+                multiGymStation.cables.up.scale.y = 1;
+                multiGymStation.cables.up.position.y = multiGymStation.cables.up.userData.baseY || 1.94;
+            }
+        }
+
+        function updateTelemetry(v1, v2, v3) {
+            document.getElementById('telemetry-val-1').innerText = v1;
+            document.getElementById('telemetry-val-2').innerText = v2;
+            document.getElementById('telemetry-val-3').innerText = v3;
+        }
+
+        /* =========================================================================
+           9. UI SYSTEM
+           ========================================================================= */
+        function initUI() { switchDay(0); }
+
+        function switchDay(dayIdx) {
+            currentDayIndex = dayIdx;
+            const dayData = WORKOUT_PROGRAM[dayIdx];
+
+            for (let i = 0; i < 4; i++) {
+                const tab = document.getElementById(`tab-day-${i}`);
+                if (tab) tab.className = (i === dayIdx) ? 'day-tab active' : 'day-tab';
+            }
+
+            document.getElementById('day-badge-subtitle').innerText = `${dayData.dayTitle} • ${dayData.exercises.length} MƏŞQ`;
+            document.getElementById('day-badge-title').innerText = dayData.daySubtitle;
+
+            const list = document.getElementById('daily-exercise-list');
+            list.innerHTML = '';
+
+            dayData.exercises.forEach((exKey, idx) => {
+                const ex = EXERCISES[exKey];
+                const sel = exKey === currentExerciseKey;
+                const item = document.createElement('div');
+                item.onclick = () => selectExercise(exKey);
+                item.className = `exercise-item${sel ? ' active' : ''}`;
+
+                const badgeClass = ex.type === 'station' ? 'type-station' : 'type-dumbbell';
+                const badgeLabel = ex.type === 'station' ? 'Stansiya' : 'Qantel';
+
+                item.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <span class="num">${idx + 1}</span>
+                        <div class="info">
+                            <div class="name">${ex.name}</div>
+                            <div class="cat">${ex.category}</div>
+                        </div>
+                    </div>
+                    <span class="type-badge ${badgeClass}">${badgeLabel}</span>
+                `;
+                list.appendChild(item);
+            });
+
+            if (!dayData.exercises.includes(currentExerciseKey)) {
+                selectExercise(dayData.exercises[0]);
+            } else {
+                selectExercise(currentExerciseKey);
+            }
+        }
+
+        function selectExercise(exKey) {
+            currentExerciseKey = exKey;
+            motionProgress = 0.0;
+            repCount = 0;
+            lastMotionProgress = 0;
+            restActive = false;
+            updateRepCounterUI();
+            const restEl = document.getElementById('rest-timer-value');
+            if (restEl) restEl.innerText = '00:00';
+            const restPill = document.getElementById('rest-timer-pill');
+            if (restPill) restPill.classList.remove('active');
+            resetAthletePose();
+            const ex = EXERCISES[exKey];
+            if (!ex) return;
+
+            const dayData = WORKOUT_PROGRAM[currentDayIndex];
+            const list = document.getElementById('daily-exercise-list');
+            if (list) {
+                Array.from(list.children).forEach((child, idx) => {
+                    const k = dayData.exercises[idx];
+                    child.className = `exercise-item${k === exKey ? ' active' : ''}`;
+                    const numEl = child.querySelector('.num');
+                    if (numEl) numEl.style.background = k === exKey ? 'var(--accent-cyan)' : '';
+                    if (numEl) numEl.style.color = k === exKey ? '#0a0e18' : '';
+                });
+            }
+
+            document.getElementById('badge-primary-muscle').innerText = ex.primaryMuscle;
+            document.getElementById('hud-exercise-desc').innerText = ex.desc;
+
+            // Update rep target for this exercise
+            const tgt = document.getElementById('rep-counter-target');
+            if (tgt) tgt.innerText = ex.targetReps || 10;
+
+            document.getElementById('telemetry-label-1').innerText = `${ex.telemetryLabels[0]}:`;
+            document.getElementById('telemetry-label-2').innerText = `${ex.telemetryLabels[1]}:`;
+            document.getElementById('telemetry-label-3').innerText = `${ex.telemetryLabels[2]}:`;
+
+            document.getElementById('mistake-card-title').innerText = ex.mistakeTitle;
+            document.getElementById('mistake-card-desc').innerText = ex.mistakeDesc;
+
+            const cuesPreview = document.getElementById('cues-preview-container');
+            cuesPreview.innerHTML = ex.cues.map((c, i) =>
+                `<strong style="color:var(--accent-cyan);font-family:'JetBrains Mono',monospace">${i+1}.</strong> ${c}`
+            ).join(' <span style="color:rgba(255,255,255,0.15)">•</span> ');
+
+            document.getElementById('modal-cues-title').innerText = `${ex.name}: Qızıl Qaydalar`;
+            document.getElementById('modal-cues-list').innerHTML = ex.cues.map((c, i) => `
+                <div class="modal-cue">
+                    <span class="cue-num">${i + 1}</span>
+                    <p class="cue-text">${c}</p>
+                </div>
+            `).join('');
+
+            if (ex.type === 'station') {
+                camera.position.set(2.5, 1.5, 2.8);
+                controls.target.set(0, 0.9, 0.2);
+            } else {
+                camera.position.set(2.8, 1.5, 3.2);
+                controls.target.set(0, 1.0, 0.85);
+            }
+        }
+
+        function setTechniqueMode(mode) {
+            techniqueMode = mode;
+            const btnC = document.getElementById('mode-btn-correct');
+            const btnM = document.getElementById('mode-btn-mistake');
+            const alert = document.getElementById('mistake-alert-card');
+
+            if (mode === 'correct') {
+                btnC.className = 'mode-btn mode-correct-active';
+                btnM.className = 'mode-btn mode-mistake-inactive';
+                alert.className = 'mistake-alert';
+            } else {
+                btnC.className = 'mode-btn mode-correct-inactive';
+                btnM.className = 'mode-btn mode-mistake-active';
+                alert.className = 'mistake-alert visible';
+            }
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            document.getElementById('icon-pause').style.display = isPlaying ? 'inline' : 'none';
+            document.getElementById('icon-play').style.display = isPlaying ? 'none' : 'inline';
+        }
+
+        function onScrubInput(val) {
+            isPlaying = false;
+            document.getElementById('icon-pause').style.display = 'none';
+            document.getElementById('icon-play').style.display = 'inline';
+            motionProgress = parseFloat(val);
+        }
+
+        function setMotionSpeed(speed) {
+            motionSpeed = speed;
+            [0.5, 1.0, 1.5].forEach(s => {
+                const btn = document.getElementById(`speed-${s.toString().replace('.', '')}`);
+                if (btn) btn.className = s === speed ? 'speed-btn active' : 'speed-btn';
+            });
+        }
+
+        function setCameraView(view) {
+            ['hero', 'front', 'side'].forEach(v => {
+                const btn = document.getElementById(`cam-btn-${v}`);
+                if (btn) btn.className = v === view ? 'cam-btn active' : 'cam-btn';
+            });
+            autoRotateCamera = false;
+            controls.autoRotate = false;
+            document.getElementById('cam-btn-orbit').className = 'cam-btn-orbit';
+
+            const isStation = EXERCISES[currentExerciseKey].type === 'station';
+            const ty = isStation ? 0.9 : 1.0;
+            const tz = isStation ? 0.2 : 0.85;
+
+            if (view === 'hero') camera.position.set(2.8, 1.6, 3.2);
+            else if (view === 'front') camera.position.set(0, 1.35, 3.6);
+            else if (view === 'side') camera.position.set(3.6, 1.35, 0.2);
+            controls.target.set(0, ty, tz);
+        }
+
+        function toggleOrbit() {
+            autoRotateCamera = !autoRotateCamera;
+            controls.autoRotate = autoRotateCamera;
+            controls.autoRotateSpeed = 2.0;
+            document.getElementById('cam-btn-orbit').className = autoRotateCamera ? 'cam-btn-orbit active' : 'cam-btn-orbit';
+        }
+
+        function resetView() { setCameraView('hero'); }
+
+        function toggleCuesModal() {
+            const m = document.getElementById('cues-modal');
+            m.className = m.className.includes('visible') ? 'modal-overlay' : 'modal-overlay visible';
+        }
+
+        function onWindowResize() {
+            camera.aspect = viewport.clientWidth / viewport.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        }
+
+        /* =========================================================================
+           10. ANIMATION LOOP
+           ========================================================================= */
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Breathing animation
+            breathPhase += delta * 1.8;
+
+            if (isPlaying) {
+                motionProgress += (delta / 3.3) * motionSpeed;
+                if (motionProgress >= 1.0) {
+                    // Cycle complete -> rep counted
+                    repCount++;
+                    updateRepCounterUI();
+                    triggerRestTimer();
+                    motionProgress = 0.0;
+                    lastMotionProgress = 0;
+                    playMetronomeTick('rep');
+                }
+                document.getElementById('motion-scrubber').value = motionProgress;
+            }
+
+            // Animate injury rings pulse + rest timer countdown
+            if (multiGymStation && multiGymStation.injuryRings.visible) {
+                const pulse = 0.10 + 0.04 * (1 + Math.sin(breathPhase * 3));
+                multiGymStation.injuryRings.children.forEach(child => {
+                    if (child.userData && child.userData.isInjury && child.geometry && child.geometry.type === 'TorusGeometry') {
+                        // Subtle scale pulse
+                        const s = 1.0 + 0.15 * Math.sin(breathPhase * 3 + (child.userData.pulsePhase || 0));
+                        child.scale.set(s, s, s);
+                    }
+                });
+            }
+            if (restActive) {
+                const elapsed = (Date.now() - restStartTime) / 1000;
+                const ex = EXERCISES[currentExerciseKey];
+                const rest = (ex && ex.restSeconds) || 90;
+                const remaining = Math.max(0, rest - elapsed);
+                const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
+                const ss = Math.floor(remaining % 60).toString().padStart(2, '0');
+                const restEl = document.getElementById('rest-timer-value');
+                if (restEl) restEl.innerText = `${mm}:${ss}`;
+                const restPill = document.getElementById('rest-timer-pill');
+                if (restPill) {
+                    if (remaining <= 0) {
+                        restPill.classList.remove('active');
+                        restActive = false;
+                        if (audioEnabled) playMetronomeTick('done');
+                    } else {
+                        restPill.classList.add('active');
+                    }
+                }
+            }
+
+            updateExerciseKinematics(motionProgress, techniqueMode === 'correct');
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function updateRepCounterUI() {
+            const el = document.getElementById('rep-counter-value');
+            if (el) el.innerText = repCount;
+        }
+
+        function triggerRestTimer() {
+            restStartTime = Date.now();
+            restActive = true;
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            if (typeof localStorage !== 'undefined') {
+                localStorage.apexMute = audioEnabled ? '0' : '1';
+            }
+            const btn = document.getElementById('audio-toggle-btn');
+            if (btn) {
+                btn.innerText = audioEnabled ? '♪ ON' : '♪ OFF';
+                btn.classList.toggle('muted', !audioEnabled);
+            }
+        }
+
+        function ensureAudioContext() {
+            if (audioContext) return audioContext;
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (Ctx) audioContext = new Ctx();
+            } catch (e) {
+                audioContext = null;
+            }
+            return audioContext;
+        }
+
+        function playMetronomeTick(kind) {
+            if (!audioEnabled) return;
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = (kind === 'rep') ? 800 : (kind === 'done' ? 1200 : 600);
+                osc.type = 'sine';
+                const now = ctx.currentTime;
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } catch (e) {/* silent fail */}
+        }
+
+        // Initialize audio button label on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('audio-toggle-btn');
+            if (btn) {
+                btn.innerText = audioEnabled ? '♪ ON' : '♪ OFF';
+                btn.classList.toggle('muted', !audioEnabled);
+            }
+            // Keyboard: M to mute
+            window.addEventListener('keydown', e => {
+                if (e.key === 'm' || e.key === 'M') toggleAudio();
+            });
+        });
+
+        window.addEventListener('DOMContentLoaded', initScene);
+    </script>
+</body>
+</html>

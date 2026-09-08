@@ -480,6 +480,35 @@
         }
         .audio-toggle-btn:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
         .audio-toggle-btn.muted { color: var(--text-muted); opacity: 0.6; }
+
+        /* ---- BIO OVERLAY TOGGLES ---- */
+        .bio-toggles {
+            display: flex; gap: 4px; padding: 4px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .bio-toggle-btn {
+            padding: 5px 10px; border-radius: 8px; border: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
+            color: var(--text-muted); background: transparent;
+        }
+        .bio-toggle-btn:hover { color: var(--text-primary); }
+        .bio-toggle-btn.active { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.35); }
+
+        /* ---- EMG BAR WIDGET ---- */
+        .emg-widget {
+            padding: 8px 14px; font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .emg-title { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .emg-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .emg-label { width: 50px; font-size: 9px; color: var(--text-secondary); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .emg-bar-bg { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .emg-bar-fill { height: 100%; border-radius: 3px; transition: width 0.15s ease; }
+        .emg-bar-primary { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+        .emg-bar-synergist { background: linear-gradient(90deg, #38bdf8, #6366f1); }
+        .emg-pct { width: 30px; font-size: 9px; color: var(--accent-amber); font-weight: 700; text-align: right; }
     </style>
 </head>
 
@@ -577,6 +606,20 @@
                 <button onclick="setCameraView('front')" id="cam-btn-front" class="cam-btn">Ön</button>
                 <button onclick="setCameraView('side')" id="cam-btn-side" class="cam-btn">Profil</button>
                 <button onclick="toggleOrbit()" id="cam-btn-orbit" class="cam-btn-orbit">⟳ 360°</button>
+            </div>
+
+            <div class="bio-toggles">
+                <button onclick="toggleTrajectory()" id="bio-btn-traj" class="bio-toggle-btn active">◈ Trayektoriya</button>
+                <button onclick="toggleAngleArcs()" id="bio-btn-arcs" class="bio-toggle-btn active">∠ Bucaqlar</button>
+            </div>
+
+            <div class="glass-panel emg-widget" id="emg-widget">
+                <div class="emg-title">⚡ Canlı Əzələ Aktivasiyası (EMG)</div>
+                <div id="emg-bars-container">
+                    <div class="emg-row"><span class="emg-label">Pec</span><div class="emg-bar-bg"><div class="emg-bar-fill emg-bar-primary" id="emg-bar-0" style="width:0%"></div></div><span class="emg-pct" id="emg-pct-0">0%</span></div>
+                    <div class="emg-row"><span class="emg-label">Triceps</span><div class="emg-bar-bg"><div class="emg-bar-fill emg-bar-synergist" id="emg-bar-1" style="width:0%"></div></div><span class="emg-pct" id="emg-pct-1">0%</span></div>
+                    <div class="emg-row"><span class="emg-label">Deltoid</span><div class="emg-bar-bg"><div class="emg-bar-fill emg-bar-synergist" id="emg-bar-2" style="width:0%"></div></div><span class="emg-pct" id="emg-pct-2">0%</span></div>
+                </div>
             </div>
         </div>
 
@@ -959,6 +1002,16 @@
         let audioEnabled = (typeof localStorage !== 'undefined' && localStorage.apexMute === '1') ? false : true;
         let audioContext = null;
 
+        // ---- HYPER-REALIST BIOMECHANICS STATE ----
+        let showTrajectory = true;   // Kinovea-style motion path ribbon
+        let showAngleArcs = true;    // 3D joint angle protractor overlay
+        let trajectoryPoints = [];   // Array of THREE.Vector3 for ribbon
+        const MAX_TRAJECTORY_PTS = 90;
+        let trajectoryLine = null;   // THREE.Line object
+        let angleArcGroup = null;    // THREE.Group for angle overlays
+        let scapulaState = { leftRetraction: 0, rightRetraction: 0 }; // scapular tracking
+        let gymAudioEnabled = true;  // gym ambient sounds
+
         /* =========================================================================
            2. THREE.JS SCENE SETUP & MATERIALS
            ========================================================================= */
@@ -968,15 +1021,22 @@
         let multiGymStation = null;
         let dumbbellL = null, dumbbellR = null, singleHeavyDumbbell = null;
 
-        // Enhanced PBR Materials
+        // Enhanced PBR Materials — Organic Athletic Skin with Specular Sheen
         const PBR = {
             skin: new THREE.MeshStandardMaterial({
-                color: 0xd4956b,
                 color: 0xc88258,
-                roughness: 0.54,
-                metalness: 0.02,
+                roughness: 0.48,
+                metalness: 0.03,
                 emissive: 0x1f0e06,
                 emissiveIntensity: 0.06
+            }),
+            // Tendon/ligament material (pale, taut)
+            tendon: new THREE.MeshStandardMaterial({
+                color: 0xe8d5c4, roughness: 0.35, metalness: 0.04
+            }),
+            // Bone material (clavicle, sternum visible surface)
+            bone: new THREE.MeshStandardMaterial({
+                color: 0xddd0c0, roughness: 0.42, metalness: 0.06
             }),
             skinDark: new THREE.MeshStandardMaterial({
                 color: 0xb57248,
@@ -1103,8 +1163,14 @@
             hamstringR: PBR.muscleDefault.clone(),
             calfL: PBR.muscleDefault.clone(),
             calfR: PBR.muscleDefault.clone(),
-            gluteL: PBR.muscleDefault.clone(),
-            gluteR: PBR.muscleDefault.clone(),
+            gluteL: new THREE.MeshStandardMaterial({
+                color: 0x0f172a, roughness: 0.82, metalness: 0.05,
+                emissive: 0x1f0e06, emissiveIntensity: 0.06
+            }),
+            gluteR: new THREE.MeshStandardMaterial({
+                color: 0x0f172a, roughness: 0.82, metalness: 0.05,
+                emissive: 0x1f0e06, emissiveIntensity: 0.06
+            }),
             abL: PBR.muscleDefault.clone(),
             abR: PBR.muscleDefault.clone()
         };
@@ -1198,6 +1264,10 @@
 
                 athleteRig = buildAthlete();
                 scene.add(athleteRig.root);
+
+                // Initialize biomechanics overlays
+                initTrajectoryRibbon();
+                initAngleArcs();
 
                 window.addEventListener('resize', onWindowResize);
                 initUI();
@@ -1525,6 +1595,7 @@
                 leftShoulder: null, rightShoulder: null,
                 leftUpperArm: null, rightUpperArm: null,
                 leftBicepMesh: null, rightBicepMesh: null,
+                leftTricepMesh: null, rightTricepMesh: null,
                 leftForearm: null, rightForearm: null,
                 leftHand: null, rightHand: null,
                 leftFingers: [], rightFingers: [],
@@ -1532,11 +1603,27 @@
                 leftUpperLeg: null, rightUpperLeg: null,
                 leftLowerLeg: null, rightLowerLeg: null,
                 leftFoot: null, rightFoot: null,
-                chestMesh: null
+                chestMesh: null,
+                // Hyper-realist anatomy refs for dynamic bulging & scapular motion
+                leftScapula: null, rightScapula: null,
+                leftPecMesh: null, rightPecMesh: null,
+                leftDeltMesh: null, rightDeltMesh: null,
+                leftLatMesh: null, rightLatMesh: null,
+                leftQuadVMO: null, rightQuadVMO: null,
+                leftQuadOuter: null, rightQuadOuter: null,
+                leftHamstring: null, rightHamstring: null,
+                leftCalfMesh: null, rightCalfMesh: null,
+                leftBrachialis: null, rightBrachialis: null,
+                leftForearmMuscle: null, rightForearmMuscle: null,
+                leftGlute: null, rightGlute: null,
+                // Base scales for reset
+                _muscleBaseScales: {}
             };
 
             const skin = PBR.skin;
             const skinD = PBR.skinDark;
+            const bone = PBR.bone;
+            const tendon = PBR.tendon;
 
             // -- PELVIS --
             const pelvisGroup = new THREE.Group();
@@ -1552,14 +1639,18 @@
             waistband.position.y = 0.09;
             pelvisGroup.add(waistband);
 
-            // Glute contours
-            const gluteL = new THREE.Mesh(new THREE.SphereGeometry(0.105, 18, 18), PBR.shorts);
+            // Glute contours (connected to muscle groups for bio-feedback)
+            const gluteL = new THREE.Mesh(new THREE.SphereGeometry(0.105, 18, 18), PBR.muscleGroups.gluteL);
             gluteL.scale.set(1.0, 1.1, 0.85);
             gluteL.position.set(0.08, -0.03, -0.065);
             gluteL.castShadow = true;
-            const gluteR = gluteL.clone();
-            gluteR.position.x = -0.08;
+            const gluteR = new THREE.Mesh(new THREE.SphereGeometry(0.105, 18, 18), PBR.muscleGroups.gluteR);
+            gluteR.scale.set(1.0, 1.1, 0.85);
+            gluteR.position.set(-0.08, -0.03, -0.065);
+            gluteR.castShadow = true;
             pelvisGroup.add(gluteL, gluteR);
+            rig.leftGlute = gluteL;
+            rig.rightGlute = gluteR;
 
             // -- SPINE & ABS --
             const spineGroup = new THREE.Group();
@@ -1572,11 +1663,12 @@
             abdomen.castShadow = true;
             spineGroup.add(abdomen);
 
-            // 6-pack abs (subtle bumps)
+            // 6-pack abs (subtle bumps with muscle highlight capability)
             for (let row = 0; row < 3; row++) {
                 const yPos = 0.04 + row * 0.058;
                 [-1, 1].forEach(sign => {
-                    const ab = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+                    const abMat = sign === 1 ? PBR.muscleGroups.abL : PBR.muscleGroups.abR;
+                    const ab = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), abMat);
                     ab.scale.set(1.2, 0.8, 0.4);
                     ab.position.set(sign * 0.035, yPos, 0.15);
                     spineGroup.add(ab);
@@ -1593,7 +1685,7 @@
                 }
             });
 
-            // -- CHEST --
+            // -- CHEST (HYPER-REALISTIC ANATOMY) --
             const chestGroup = new THREE.Group();
             chestGroup.position.set(0, 0.22, 0);
             spineGroup.add(chestGroup);
@@ -1605,29 +1697,93 @@
             chestGroup.add(ribcage);
             rig.chestMesh = ribcage;
 
-            // Pectoral muscles (athletic contoured pectoralis major)
-            const pecGeo = new THREE.SphereGeometry(0.08, 18, 18);
-            const pecL = new THREE.Mesh(pecGeo, PBR.muscleGroups.pecMajorL);
-            pecL.scale.set(1.20, 0.75, 0.38);
-            pecL.position.set(0.078, 0.15, 0.145);
-            pecL.rotation.z = -0.10;
-            pecL.castShadow = true;
+            // Clavicles (Collarbones) — visible bone ridges
+            [-1, 1].forEach(sign => {
+                const clavicle = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.010, 0.19, 12), bone);
+                clavicle.rotation.z = sign * 0.15;
+                clavicle.rotation.x = 0.08;
+                clavicle.position.set(sign * 0.10, 0.255, 0.09);
+                clavicle.castShadow = true;
+                chestGroup.add(clavicle);
+                // Clavicle joint caps
+                const cap = new THREE.Mesh(new THREE.SphereGeometry(0.013, 10, 10), bone);
+                cap.position.set(sign * 0.19, 0.245, 0.085);
+                chestGroup.add(cap);
+            });
 
-            const pecR = new THREE.Mesh(pecGeo, PBR.muscleGroups.pecMajorR);
-            pecR.scale.set(1.20, 0.75, 0.38);
-            pecR.position.set(-0.078, 0.15, 0.145);
-            pecR.rotation.z = 0.10;
-            pecR.castShadow = true;
-            chestGroup.add(pecL, pecR);
+            // Sternum ridge (center chest bone)
+            const sternum = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.18, 10), bone);
+            sternum.position.set(0, 0.17, 0.165);
+            sternum.castShadow = true;
+            chestGroup.add(sternum);
 
-            // Lats (V-taper)
+            // Sternal notch (suprasternal depression)
+            const sternalNotch = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 10), skinD);
+            sternalNotch.scale.set(1.2, 0.5, 0.4);
+            sternalNotch.position.set(0, 0.26, 0.10);
+            chestGroup.add(sternalNotch);
+
+            // Pectoralis Major — separated UPPER (clavicular) + LOWER (sternal) heads
+            // Upper Pec (clavicular fibers — angled upward)
+            [-1, 1].forEach(sign => {
+                const pecMat = sign === 1 ? PBR.muscleGroups.pecMajorL : PBR.muscleGroups.pecMajorR;
+                // Upper Pec Head
+                const pecUpper = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 18), pecMat);
+                pecUpper.scale.set(1.25, 0.55, 0.32);
+                pecUpper.position.set(sign * 0.075, 0.215, 0.135);
+                pecUpper.rotation.z = -sign * 0.12;
+                pecUpper.castShadow = true;
+                chestGroup.add(pecUpper);
+                // Lower Pec Head (sternal — larger, rounder)
+                const pecLower = new THREE.Mesh(new THREE.SphereGeometry(0.068, 18, 18), pecMat);
+                pecLower.scale.set(1.30, 0.65, 0.38);
+                pecLower.position.set(sign * 0.080, 0.14, 0.150);
+                pecLower.rotation.z = -sign * 0.08;
+                pecLower.castShadow = true;
+                chestGroup.add(pecLower);
+                // Pec insertion tendon (toward armpit)
+                const pecTendon = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.014, 0.06, 10), tendon);
+                pecTendon.position.set(sign * 0.16, 0.18, 0.10);
+                pecTendon.rotation.z = sign * 0.6;
+                chestGroup.add(pecTendon);
+                // Store ref for bulging
+                if (sign === 1) rig.leftPecMesh = pecLower;
+                else rig.rightPecMesh = pecLower;
+            });
+
+            // Lats (V-taper — enhanced with realistic dorsal shape)
             [-1, 1].forEach(sign => {
                 const latMat = sign === 1 ? PBR.muscleGroups.latL : PBR.muscleGroups.latR;
-                const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.08, 0.24, 16), latMat);
-                lat.position.set(sign * 0.175, 0.12, -0.04);
-                lat.rotation.z = -sign * 0.35;
-                lat.scale.set(1.0, 1.0, 0.55);
+                // Main lat body (fan-shaped)
+                const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.09, 0.26, 16), latMat);
+                lat.position.set(sign * 0.180, 0.10, -0.045);
+                lat.rotation.z = -sign * 0.38;
+                lat.scale.set(1.0, 1.0, 0.58);
+                lat.castShadow = true;
                 chestGroup.add(lat);
+                // Lat lower insertion (iliac crest attachment)
+                const latLower = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 14), latMat);
+                latLower.scale.set(1.2, 0.8, 0.5);
+                latLower.position.set(sign * 0.155, -0.02, -0.03);
+                chestGroup.add(latLower);
+                if (sign === 1) rig.leftLatMesh = lat;
+                else rig.rightLatMesh = lat;
+            });
+
+            // Scapulae (Shoulder Blades — movable for scapulohumeral rhythm)
+            [-1, 1].forEach(sign => {
+                const scapula = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.015), skin);
+                scapula.position.set(sign * 0.10, 0.13, -0.12);
+                scapula.rotation.y = sign * 0.12;
+                scapula.castShadow = true;
+                chestGroup.add(scapula);
+                // Scapular spine (bony ridge)
+                const scapRidge = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.005, 0.08, 8), bone);
+                scapRidge.rotation.z = Math.PI / 2;
+                scapRidge.position.set(sign * 0.10, 0.17, -0.125);
+                chestGroup.add(scapRidge);
+                if (sign === 1) rig.leftScapula = scapula;
+                else rig.rightScapula = scapula;
             });
 
             // -- NECK & HEAD --
@@ -1755,7 +1911,7 @@
                 headGroup.add(sideHair);
             });
 
-            // -- ARMS --
+            // -- ARMS (HYPER-REALISTIC MUSCLE ANATOMY) --
             ['left', 'right'].forEach(side => {
                 const isL = side === 'left';
                 const s = isL ? 1 : -1;
@@ -1764,29 +1920,68 @@
                 shoulder.position.set(s * 0.25, 0.22, 0);
                 chestGroup.add(shoulder);
 
-                // Deltoid (3D round muscle)
+                // Deltoid — 3 anatomical heads (anterior, lateral, posterior)
                 const deltMat = isL ? PBR.muscleGroups.deltoidL : PBR.muscleGroups.deltoidR;
-                const delt = new THREE.Mesh(new THREE.SphereGeometry(0.088, 20, 20), deltMat);
-                delt.scale.set(1.0, 1.2, 1.0);
-                delt.castShadow = true;
-                shoulder.add(delt);
+                // Anterior Deltoid (front)
+                const deltAnt = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), deltMat);
+                deltAnt.scale.set(0.85, 1.1, 0.7);
+                deltAnt.position.set(0, 0.01, 0.04);
+                deltAnt.castShadow = true;
+                shoulder.add(deltAnt);
+                // Lateral Deltoid (side — largest cap)
+                const deltLat = new THREE.Mesh(new THREE.SphereGeometry(0.072, 18, 18), deltMat);
+                deltLat.scale.set(1.0, 1.15, 0.85);
+                deltLat.position.set(s * 0.02, 0.005, 0);
+                deltLat.castShadow = true;
+                shoulder.add(deltLat);
+                // Posterior Deltoid (rear)
+                const deltPost = new THREE.Mesh(new THREE.SphereGeometry(0.048, 14, 14), deltMat);
+                deltPost.scale.set(0.80, 1.0, 0.65);
+                deltPost.position.set(0, 0.01, -0.035);
+                deltPost.castShadow = true;
+                shoulder.add(deltPost);
+                if (isL) rig.leftDeltMesh = deltLat;
+                else rig.rightDeltMesh = deltLat;
 
                 const upperArm = new THREE.Group();
                 shoulder.add(upperArm);
 
-                // Tricep
+                // Tricep — lateral head (horseshoe visible from side)
                 const triMat = isL ? PBR.muscleGroups.tricepsL : PBR.muscleGroups.tricepsR;
-                const tricep = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.048, 0.27, 18), triMat);
-                tricep.position.set(0, -0.135, -0.012);
-                tricep.castShadow = true;
-                upperArm.add(tricep);
+                const tricepLateral = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.044, 0.24, 18), triMat);
+                tricepLateral.position.set(s * 0.008, -0.135, -0.018);
+                tricepLateral.castShadow = true;
+                upperArm.add(tricepLateral);
+                // Tricep — long head (medial bulk)
+                const tricepLong = new THREE.Mesh(new THREE.SphereGeometry(0.038, 14, 14), triMat);
+                tricepLong.scale.set(0.7, 1.6, 0.65);
+                tricepLong.position.set(-s * 0.005, -0.14, -0.025);
+                upperArm.add(tricepLong);
+                // Tricep tendon (toward elbow — horseshoe shape)
+                const triTendon = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.05, 10), tendon);
+                triTendon.position.set(0, -0.25, -0.016);
+                upperArm.add(triTendon);
+                if (isL) rig.leftTricepMesh = tricepLateral;
+                else rig.rightTricepMesh = tricepLateral;
 
-                // Bicep (dynamic bulge)
+                // Bicep (dynamic bulge — two heads implied by asymmetric shape)
                 const bicMat = isL ? PBR.muscleGroups.bicepsL : PBR.muscleGroups.bicepsR;
                 const bicep = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 18), bicMat);
                 bicep.scale.set(0.85, 1.4, 0.9);
                 bicep.position.set(0, -0.13, 0.02);
                 upperArm.add(bicep);
+                // Bicep tendon (toward elbow crease)
+                const bicTendon = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.010, 0.04, 8), tendon);
+                bicTendon.position.set(0, -0.24, 0.025);
+                upperArm.add(bicTendon);
+
+                // Brachialis (between bicep & tricep, visible from side)
+                const brachialis = new THREE.Mesh(new THREE.SphereGeometry(0.032, 14, 14), skin);
+                brachialis.scale.set(0.7, 1.5, 0.6);
+                brachialis.position.set(s * 0.025, -0.17, 0.005);
+                upperArm.add(brachialis);
+                if (isL) rig.leftBrachialis = brachialis;
+                else rig.rightBrachialis = brachialis;
 
                 const forearm = new THREE.Group();
                 forearm.position.set(0, -0.27, 0);
@@ -1797,10 +1992,23 @@
                 forearmMesh.castShadow = true;
                 forearm.add(forearmMesh);
 
-                // Wrist
+                // Brachioradialis (forearm muscle ridge — visible when flexing)
+                const brachio = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+                brachio.scale.set(0.6, 2.2, 0.5);
+                brachio.position.set(s * 0.025, -0.08, 0.015);
+                forearm.add(brachio);
+                if (isL) rig.leftForearmMuscle = brachio;
+                else rig.rightForearmMuscle = brachio;
+
+                // Wrist with visible vein ridges
                 const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.03, 0.04, 14), skin);
                 wrist.position.set(0, -0.26, 0);
                 forearm.add(wrist);
+                // Dorsal vein
+                const vein = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.08, 6), skin);
+                vein.position.set(s * 0.012, -0.22, 0.022);
+                vein.rotation.x = 0.15;
+                forearm.add(vein);
 
                 // -- HAND WITH ARTICULATED FINGERS --
                 const handGroup = new THREE.Group();
@@ -1897,7 +2105,7 @@
                 }
             });
 
-            // -- LEGS --
+            // -- LEGS (HYPER-REALISTIC MUSCLE ANATOMY) --
             ['left', 'right'].forEach(side => {
                 const isL = side === 'left';
                 const s = isL ? 1 : -1;
@@ -1914,38 +2122,95 @@
                 thigh.castShadow = true;
                 upperLeg.add(thigh);
 
-                // Vastus medialis (inner quad bulge)
                 const quadMat = isL ? PBR.muscleGroups.quadL : PBR.muscleGroups.quadR;
-                const vastus = new THREE.Mesh(new THREE.SphereGeometry(0.04, 14, 14), quadMat);
-                vastus.position.set(-s * 0.04, -0.36, 0.03);
-                upperLeg.add(vastus);
 
-                // Outer quad sweep
-                const outerQuad = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 14), quadMat);
-                outerQuad.position.set(s * 0.05, -0.28, 0.02);
-                upperLeg.add(outerQuad);
+                // VMO — Vastus Medialis Obliquus (teardrop shape near knee)
+                const vmo = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 16), quadMat);
+                vmo.scale.set(0.75, 1.0, 0.6);
+                vmo.position.set(-s * 0.042, -0.38, 0.035);
+                upperLeg.add(vmo);
+                if (isL) rig.leftQuadVMO = vmo;
+                else rig.rightQuadVMO = vmo;
+
+                // Rectus Femoris (central quad head — runs straight down)
+                const rectus = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 14), quadMat);
+                rectus.scale.set(0.8, 2.0, 0.55);
+                rectus.position.set(0, -0.22, 0.05);
+                upperLeg.add(rectus);
+
+                // Vastus Lateralis (outer quad sweep — bodybuilder hallmark)
+                const vastLat = new THREE.Mesh(new THREE.SphereGeometry(0.038, 14, 14), quadMat);
+                vastLat.scale.set(0.85, 1.6, 0.55);
+                vastLat.position.set(s * 0.055, -0.28, 0.025);
+                upperLeg.add(vastLat);
+                if (isL) rig.leftQuadOuter = vastLat;
+                else rig.rightQuadOuter = vastLat;
+
+                // Hamstring (rear thigh — biceps femoris + semimembranosus)
+                const hamMat = isL ? PBR.muscleGroups.hamstringL : PBR.muscleGroups.hamstringR;
+                const hamstring = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 14), hamMat);
+                hamstring.scale.set(0.85, 2.2, 0.6);
+                hamstring.position.set(0, -0.24, -0.04);
+                upperLeg.add(hamstring);
+                if (isL) rig.leftHamstring = hamstring;
+                else rig.rightHamstring = hamstring;
+
+                // IT Band (iliotibial band — lateral thigh fascia)
+                const itBand = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.35, 8), tendon);
+                itBand.position.set(s * 0.075, -0.24, 0);
+                upperLeg.add(itBand);
 
                 const lowerLeg = new THREE.Group();
                 lowerLeg.position.set(0, -0.44, 0);
                 upperLeg.add(lowerLeg);
 
-                // Patella
+                // Patella with patellar tendon
                 const patella = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), skin);
                 patella.position.set(0, 0, 0.04);
                 lowerLeg.add(patella);
+                const patellarTendon = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.06, 8), tendon);
+                patellarTendon.position.set(0, -0.03, 0.042);
+                lowerLeg.add(patellarTendon);
 
-                // Calf (gastrocnemius)
-                const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.038, 0.42, 20), skin);
-                calf.position.set(0, -0.21, -0.018);
-                calf.castShadow = true;
-                lowerLeg.add(calf);
+                // Tibialis Anterior (shin muscle — visible when dorsiflexing)
+                const tibialis = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), skin);
+                tibialis.scale.set(0.6, 2.5, 0.5);
+                tibialis.position.set(s * 0.02, -0.12, 0.03);
+                lowerLeg.add(tibialis);
 
-                // Calf muscle bulge
+                // Calf — Gastrocnemius (TWO distinct heads: medial & lateral)
                 const calfMat = isL ? PBR.muscleGroups.calfL : PBR.muscleGroups.calfR;
-                const calfBulge = new THREE.Mesh(new THREE.SphereGeometry(0.04, 14, 14), calfMat);
-                calfBulge.scale.set(0.9, 1.3, 0.8);
-                calfBulge.position.set(0, -0.12, -0.035);
-                lowerLeg.add(calfBulge);
+                // Medial head (inner, larger)
+                const calfMed = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 16), calfMat);
+                calfMed.scale.set(0.85, 1.5, 0.7);
+                calfMed.position.set(-s * 0.015, -0.10, -0.032);
+                calfMed.castShadow = true;
+                lowerLeg.add(calfMed);
+                // Lateral head (outer, slightly smaller)
+                const calfLat = new THREE.Mesh(new THREE.SphereGeometry(0.036, 14, 14), calfMat);
+                calfLat.scale.set(0.75, 1.4, 0.65);
+                calfLat.position.set(s * 0.02, -0.09, -0.030);
+                calfLat.castShadow = true;
+                lowerLeg.add(calfLat);
+                if (isL) rig.leftCalfMesh = calfMed;
+                else rig.rightCalfMesh = calfMed;
+
+                // Soleus (deeper calf — visible below gastrocnemius)
+                const soleus = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.025, 0.20, 16), skin);
+                soleus.position.set(0, -0.22, -0.024);
+                soleus.castShadow = true;
+                lowerLeg.add(soleus);
+
+                // Achilles Tendon (visible taut cord above heel)
+                const achilles = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.12, 8), tendon);
+                achilles.position.set(0, -0.34, -0.020);
+                lowerLeg.add(achilles);
+
+                // Lower shin (tibia shaft visible through skin)
+                const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.050, 0.032, 0.42, 20), skin);
+                shin.position.set(0, -0.21, 0);
+                shin.castShadow = true;
+                lowerLeg.add(shin);
 
                 // Foot / Sneaker
                 const footGroup = new THREE.Group();
@@ -2321,19 +2586,39 @@
             resetAllMuscles();
             resetWeightStack();
 
-            // Natural rep cadence with smooth easing
+            // ===== AUTHENTIC 3-1-1-1 REP TEMPO =====
+            // Total rep = 6 beats: Eccentric 3s (50%), Stretch Pause 0.8s (13%), Concentric 1.2s (20%), Peak Squeeze 1s (17%)
             let cycle = 0;
             let phaseText = "";
+            let phaseIntensity = 0; // 0-1 for EMG bio-feedback
 
-            if (progress < 0.42) {
-                cycle = smoothstep(progress / 0.42);
-                phaseText = "Eksentrik (Nəzarətli Enmə)";
-            } else if (progress <= 0.58) {
+            if (progress < 0.50) {
+                // ECCENTRIC PHASE (slow, controlled lowering — 3 seconds)
+                const t = progress / 0.50;
+                cycle = smoothstep(t);
+                phaseText = "▼ Eksentrik (3s Nəzarətli Enmə)";
+                phaseIntensity = 0.4 + t * 0.3; // moderate tension during eccentric
+            } else if (progress < 0.63) {
+                // STRETCH PAUSE (elastic micro-pause — 0.8 seconds)
                 cycle = 1.0;
-                phaseText = "Zirvə Gərilmə (İzometrik)";
+                phaseText = "◆ Gərilmə Keçidi (İnersiyasız)";
+                phaseIntensity = 0.55;
+            } else if (progress < 0.83) {
+                // CONCENTRIC PHASE (explosive drive with sticking point — 1.2 seconds)
+                const t = (progress - 0.63) / 0.20;
+                // Non-linear: fast start, slight slow at sticking point (40-60%), strong finish
+                const stickingPoint = t < 0.4 ? smoothstep(t / 0.4) * 0.5 :
+                                      t < 0.6 ? 0.5 + (t - 0.4) * 1.0 :
+                                      0.7 + smoothstep((t - 0.6) / 0.4) * 0.3;
+                cycle = 1.0 - stickingPoint;
+                phaseText = "▲ Konsentrik (Partlayıcı Sürücü)";
+                phaseIntensity = 0.7 + t * 0.3; // highest tension during concentric
             } else {
-                cycle = 1.0 - smoothstep((progress - 0.58) / 0.42);
-                phaseText = "Konsentrik (Yığılma)";
+                // PEAK SQUEEZE (isometric hold at top — 1 second)
+                const t = (progress - 0.83) / 0.17;
+                cycle = smoothstep(t) * 0.05; // almost fully contracted, tiny pulse
+                phaseText = "★ Zirvə Sıxılma (Mind-Muscle)";
+                phaseIntensity = 1.0 - t * 0.15; // peak then slight release
             }
 
             document.getElementById('motion-phase-badge').innerText = phaseText;
@@ -2353,9 +2638,28 @@
                 hideInjuryRings();
             }
 
-            // Apply breathing to chest
-            const breathScale = 1.0 + Math.sin(breathPhase) * 0.012;
+            // Enhanced breathing synchronized with rep tempo
+            // Inhale during eccentric, brace during pause, exhale forcefully during concentric
+            const breathAmp = (progress < 0.50) ? 0.018 : (progress < 0.63) ? 0.020 : 0.008;
+            const breathScale = 1.0 + Math.sin(breathPhase) * breathAmp;
             athleteRig.chestMesh.scale.set(1.0, breathScale, breathScale);
+
+            // Scapular rhythm — retraction/protraction based on exercise type
+            if (athleteRig.leftScapula && athleteRig.rightScapula) {
+                const scapRetract = isCorrect ? cycle * 0.06 : cycle * 0.02;
+                if (['station_chest_press', 'station_pec_fly'].includes(currentExerciseKey)) {
+                    // Press/fly: scapulae retracted and depressed
+                    athleteRig.leftScapula.position.x = 0.10 + scapRetract;
+                    athleteRig.rightScapula.position.x = -0.10 - scapRetract;
+                } else if (['station_lat_pulldown', 'station_seated_row'].includes(currentExerciseKey)) {
+                    // Pull: scapulae actively squeeze together during contraction
+                    const pullRetract = isCorrect ? cycle * 0.10 : cycle * 0.04;
+                    athleteRig.leftScapula.position.x = 0.10 + pullRetract;
+                    athleteRig.rightScapula.position.x = -0.10 - pullRetract;
+                    athleteRig.leftScapula.position.z = -0.12 - pullRetract * 0.3;
+                    athleteRig.rightScapula.position.z = -0.12 - pullRetract * 0.3;
+                }
+            }
 
             switch (currentExerciseKey) {
                 case 'station_chest_press': solveChestPress(cycle, isCorrect); break;
@@ -2372,6 +2676,18 @@
                 case 'dumbbell_hammer_curl': solveHammerCurl(cycle, isCorrect); break;
                 case 'dumbbell_walking_lunge': solveWalkingLunge(cycle, isCorrect); break;
             }
+
+            // ===== DYNAMIC MUSCLE BULGING =====
+            applyMuscleBulging(cycle, phaseIntensity);
+
+            // ===== EMG BIO-TELEMETRY UPDATE =====
+            updateEMGWidget(phaseIntensity);
+
+            // ===== 3D TRAJECTORY RIBBON UPDATE =====
+            if (showTrajectory) updateTrajectoryRibbon();
+
+            // ===== 3D ANGLE ARC OVERLAY =====
+            if (showAngleArcs) updateAngleArcs(cycle);
         }
 
         // -- STATION CHEST PRESS --
@@ -2510,6 +2826,7 @@
 
             if (ok) {
                 r.spine.rotation.x = ec * 0.34;
+                r.head.rotation.x = -ec * 0.18; // Compensatory neutral cervical spine alignment
                 r.leftUpperLeg.rotation.set(-ec * 1.40, 0.22, 0);
                 r.leftLowerLeg.rotation.x = ec * 1.52;
                 r.rightUpperLeg.rotation.set(-ec * 1.40, -0.22, 0);
@@ -2521,6 +2838,7 @@
                 setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.3);
             } else {
                 r.spine.rotation.x = ec * 0.70;
+                r.head.rotation.x = -ec * 0.65; // Neck hyperextension / hunch strain
                 r.leftUpperLeg.rotation.set(-ec * 1.28, 0, -ec * 0.42);
                 r.leftLowerLeg.rotation.x = ec * 1.34;
                 r.rightUpperLeg.rotation.set(-ec * 1.28, 0, ec * 0.42);
@@ -2579,6 +2897,7 @@
 
             if (ok) {
                 r.spine.rotation.x = ec * 1.12;
+                r.head.rotation.x = -ec * 0.45; // Neutral cervical spine follows torso
                 r.leftUpperLeg.rotation.x = -ec * 0.33;
                 r.leftLowerLeg.rotation.x = ec * 0.36;
                 r.rightUpperLeg.rotation.x = -ec * 0.33;
@@ -2587,11 +2906,12 @@
                 r.rightUpperArm.rotation.x = -ec * 1.02;
                 updateTelemetry("162° Sabit Diz", `${Math.round(180 - c * 78)}° Hinge`, "100% Neytral");
                 // Bio-light: Hamstrings + Glutes + Lower Back
-                setMuscleGroupIntensity(['gluteL', 'gluteR'], MUSCLE_BASE_INTENSITY + 0.7);
+                setMuscleGroupIntensity(['gluteL', 'gluteR', 'hamstringL', 'hamstringR'], MUSCLE_BASE_INTENSITY + 0.7);
                 setMuscleGroupIntensity(['abL', 'abR'], MUSCLE_BASE_INTENSITY + 0.5);
             } else {
                 r.pelvis.position.z = 1.10;
                 r.spine.rotation.x = ec * 1.38;
+                r.head.rotation.x = -ec * 1.20; // Cervical hyperextension looking up at ceiling
                 r.leftUpperArm.rotation.x = -ec * 0.68;
                 r.rightUpperArm.rotation.x = -ec * 0.68;
                 updateTelemetry("180° Kilidli", "35° Qüsurlu", "55° Donqar ⚠");
@@ -2951,8 +3271,30 @@
             r.leftLowerLeg.rotation.set(0, 0, 0);
             r.rightLowerLeg.rotation.set(0, 0, 0);
 
-            r.leftBicepMesh.scale.set(0.85, 1.4, 0.9);
-            r.rightBicepMesh.scale.set(0.85, 1.4, 0.9);
+            if (r.leftBicepMesh) r.leftBicepMesh.scale.set(0.85, 1.4, 0.9);
+            if (r.rightBicepMesh) r.rightBicepMesh.scale.set(0.85, 1.4, 0.9);
+            if (r.leftBrachialis) r.leftBrachialis.scale.set(0.7, 1.5, 0.6);
+            if (r.rightBrachialis) r.rightBrachialis.scale.set(0.7, 1.5, 0.6);
+            if (r.leftPecMesh) r.leftPecMesh.scale.set(1.30, 0.65, 0.38);
+            if (r.rightPecMesh) r.rightPecMesh.scale.set(1.30, 0.65, 0.38);
+            if (r.leftTricepMesh) r.leftTricepMesh.scale.set(1.0, 1.0, 1.0);
+            if (r.rightTricepMesh) r.rightTricepMesh.scale.set(1.0, 1.0, 1.0);
+            if (r.leftDeltMesh) r.leftDeltMesh.scale.set(1.0, 1.15, 0.85);
+            if (r.rightDeltMesh) r.rightDeltMesh.scale.set(1.0, 1.15, 0.85);
+            if (r.leftQuadVMO) r.leftQuadVMO.scale.set(0.75, 1.0, 0.6);
+            if (r.rightQuadVMO) r.rightQuadVMO.scale.set(0.75, 1.0, 0.6);
+            if (r.leftQuadOuter) r.leftQuadOuter.scale.set(0.85, 1.6, 0.55);
+            if (r.rightQuadOuter) r.rightQuadOuter.scale.set(0.85, 1.6, 0.55);
+            if (r.leftHamstring) r.leftHamstring.scale.set(0.85, 2.2, 0.6);
+            if (r.rightHamstring) r.rightHamstring.scale.set(0.85, 2.2, 0.6);
+            if (r.leftCalfMesh) r.leftCalfMesh.scale.set(0.85, 1.5, 0.7);
+            if (r.rightCalfMesh) r.rightCalfMesh.scale.set(0.85, 1.5, 0.7);
+            if (r.leftLatMesh) r.leftLatMesh.scale.set(1.0, 1.0, 0.58);
+            if (r.rightLatMesh) r.rightLatMesh.scale.set(1.0, 1.0, 0.58);
+            if (r.leftScapula) {
+                r.leftScapula.position.set(0.10, 0.13, -0.12);
+                r.rightScapula.position.set(-0.10, 0.13, -0.12);
+            }
 
             multiGymStation.pressArms.rotation.x = 0;
             multiGymStation.latBar.position.y = 1.83;
@@ -2971,6 +3313,402 @@
             document.getElementById('telemetry-val-1').innerText = v1;
             document.getElementById('telemetry-val-2').innerText = v2;
             document.getElementById('telemetry-val-3').innerText = v3;
+        }
+
+        /* =========================================================================
+           8B. DYNAMIC MUSCLE BULGING (RADIAL DEFORMATION)
+           ========================================================================= */
+        function applyMuscleBulging(cycle, intensity) {
+            if (!athleteRig) return;
+            const r = athleteRig;
+            const ex = EXERCISES[currentExerciseKey];
+            if (!ex) return;
+
+            // Muscle contraction physics: when a muscle shortens (concentric),
+            // it gets thicker radially (conservation of volume).
+            // The bulge amount is proportional to: (1 - cycle) for muscles that
+            // shorten as progress increases, and cycle for the reverse.
+            const contractFactor = (1.0 - cycle); // 0 at bottom, 1 at top
+
+            // Exercise-specific bulging
+            const k = currentExerciseKey;
+
+            // Bicep bulge (all curl exercises)
+            if (['dumbbell_biceps_curl', 'dumbbell_hammer_curl'].includes(k)) {
+                const bulgeFactor = 1.0 + contractFactor * intensity * 0.35;
+                r.leftBicepMesh.scale.set(0.85 * bulgeFactor, 1.4 / (bulgeFactor * 0.5 + 0.5), 0.9 * bulgeFactor);
+                r.rightBicepMesh.scale.set(0.85 * bulgeFactor, 1.4 / (bulgeFactor * 0.5 + 0.5), 0.9 * bulgeFactor);
+                // Brachialis also bulges
+                if (r.leftBrachialis) {
+                    const brachioBulge = 1.0 + contractFactor * intensity * 0.2;
+                    r.leftBrachialis.scale.set(0.7 * brachioBulge, 1.5, 0.6 * brachioBulge);
+                    r.rightBrachialis.scale.set(0.7 * brachioBulge, 1.5, 0.6 * brachioBulge);
+                }
+            }
+
+            // Pec bulge (chest press, pec fly)
+            if (['station_chest_press', 'station_pec_fly'].includes(k)) {
+                const pecBulge = 1.0 + contractFactor * intensity * 0.25;
+                if (r.leftPecMesh) r.leftPecMesh.scale.set(1.30 * pecBulge, 0.65, 0.38 * pecBulge);
+                if (r.rightPecMesh) r.rightPecMesh.scale.set(1.30 * pecBulge, 0.65, 0.38 * pecBulge);
+            }
+
+            // Tricep bulge (pushdown, chest press, shoulder press)
+            if (['station_triceps_pushdown', 'station_chest_press', 'dumbbell_shoulder_press'].includes(k)) {
+                const triBulge = 1.0 + contractFactor * intensity * 0.22;
+                if (r.leftTricepMesh) r.leftTricepMesh.scale.set(1.0, 1.0, triBulge);
+                if (r.rightTricepMesh) r.rightTricepMesh.scale.set(1.0, 1.0, triBulge);
+            }
+
+            // Deltoid bulge (shoulder press, lateral raise)
+            if (['dumbbell_shoulder_press', 'dumbbell_lateral_raise'].includes(k)) {
+                const deltBulge = 1.0 + contractFactor * intensity * 0.2;
+                if (r.leftDeltMesh) r.leftDeltMesh.scale.set(deltBulge, 1.15, 0.85 * deltBulge);
+                if (r.rightDeltMesh) r.rightDeltMesh.scale.set(deltBulge, 1.15, 0.85 * deltBulge);
+            }
+
+            // Quad bulge (squat, lunge, leg extension)
+            if (['goblet_squat', 'station_leg_extension', 'dumbbell_walking_lunge'].includes(k)) {
+                const quadBulge = 1.0 + contractFactor * intensity * 0.28;
+                if (r.leftQuadVMO) r.leftQuadVMO.scale.set(0.75 * quadBulge, 1.0, 0.6 * quadBulge);
+                if (r.rightQuadVMO) r.rightQuadVMO.scale.set(0.75 * quadBulge, 1.0, 0.6 * quadBulge);
+                if (r.leftQuadOuter) r.leftQuadOuter.scale.set(0.85 * quadBulge, 1.6, 0.55 * quadBulge);
+                if (r.rightQuadOuter) r.rightQuadOuter.scale.set(0.85 * quadBulge, 1.6, 0.55 * quadBulge);
+            }
+
+            // Calf bulge (squat, lunge, leg extension)
+            if (['goblet_squat', 'dumbbell_walking_lunge'].includes(k)) {
+                const calfBulge = 1.0 + contractFactor * intensity * 0.18;
+                if (r.leftCalfMesh) r.leftCalfMesh.scale.set(0.85 * calfBulge, 1.5, 0.7 * calfBulge);
+                if (r.rightCalfMesh) r.rightCalfMesh.scale.set(0.85 * calfBulge, 1.5, 0.7 * calfBulge);
+            }
+
+            // Lat & Bicep bulge (pulldown, row)
+            if (['station_lat_pulldown', 'station_seated_row'].includes(k)) {
+                const latBulge = 1.0 + contractFactor * intensity * 0.22;
+                if (r.leftLatMesh) r.leftLatMesh.scale.set(latBulge, 1.0, 0.58 * latBulge);
+                if (r.rightLatMesh) r.rightLatMesh.scale.set(latBulge, 1.0, 0.58 * latBulge);
+                const bicBulge = 1.0 + contractFactor * intensity * 0.20;
+                if (r.leftBicepMesh) r.leftBicepMesh.scale.set(0.85 * bicBulge, 1.4 / (bicBulge * 0.5 + 0.5), 0.9 * bicBulge);
+                if (r.rightBicepMesh) r.rightBicepMesh.scale.set(0.85 * bicBulge, 1.4 / (bicBulge * 0.5 + 0.5), 0.9 * bicBulge);
+            }
+
+            // Hamstrings & Glutes (RDL, Squat, Lunge)
+            if (['dumbbell_rdl', 'goblet_squat', 'dumbbell_walking_lunge'].includes(k)) {
+                const hamBulge = 1.0 + contractFactor * intensity * 0.24;
+                if (r.leftHamstring) r.leftHamstring.scale.set(0.85 * hamBulge, 2.2, 0.6 * hamBulge);
+                if (r.rightHamstring) r.rightHamstring.scale.set(0.85 * hamBulge, 2.2, 0.6 * hamBulge);
+                if (r.leftGlute) r.leftGlute.scale.set(1.0 * hamBulge, 1.1, 0.85 * hamBulge);
+                if (r.rightGlute) r.rightGlute.scale.set(1.0 * hamBulge, 1.1, 0.85 * hamBulge);
+            }
+        }
+
+        /* =========================================================================
+           8C. EMG BIO-TELEMETRY WIDGET
+           ========================================================================= */
+        function updateEMGWidget(phaseIntensity) {
+            const ex = EXERCISES[currentExerciseKey];
+            if (!ex) return;
+
+            // Define EMG muscle groups for each exercise
+            const emgConfig = {
+                station_chest_press: [
+                    { label: 'Pec Major', pct: 85, type: 'primary' },
+                    { label: 'Triceps', pct: 55, type: 'synergist' },
+                    { label: 'Ant Delt', pct: 40, type: 'synergist' }
+                ],
+                station_pec_fly: [
+                    { label: 'Pec Major', pct: 92, type: 'primary' },
+                    { label: 'Ant Delt', pct: 35, type: 'synergist' },
+                    { label: 'Biceps', pct: 20, type: 'synergist' }
+                ],
+                station_lat_pulldown: [
+                    { label: 'Lat Dorsi', pct: 88, type: 'primary' },
+                    { label: 'Biceps', pct: 60, type: 'synergist' },
+                    { label: 'Rhomboid', pct: 45, type: 'synergist' }
+                ],
+                station_seated_row: [
+                    { label: 'Rhomboid', pct: 82, type: 'primary' },
+                    { label: 'Lat Dorsi', pct: 70, type: 'synergist' },
+                    { label: 'Biceps', pct: 55, type: 'synergist' }
+                ],
+                station_leg_extension: [
+                    { label: 'Quad', pct: 95, type: 'primary' },
+                    { label: 'VMO', pct: 85, type: 'primary' },
+                    { label: 'Tibialis', pct: 25, type: 'synergist' }
+                ],
+                station_triceps_pushdown: [
+                    { label: 'Triceps', pct: 90, type: 'primary' },
+                    { label: 'Ant Delt', pct: 20, type: 'synergist' },
+                    { label: 'Core', pct: 15, type: 'synergist' }
+                ],
+                goblet_squat: [
+                    { label: 'Quad', pct: 80, type: 'primary' },
+                    { label: 'Glute', pct: 75, type: 'primary' },
+                    { label: 'Core', pct: 45, type: 'synergist' }
+                ],
+                dumbbell_shoulder_press: [
+                    { label: 'Deltoid', pct: 88, type: 'primary' },
+                    { label: 'Triceps', pct: 55, type: 'synergist' },
+                    { label: 'Üst Pec', pct: 25, type: 'synergist' }
+                ],
+                dumbbell_rdl: [
+                    { label: 'Hamstr', pct: 85, type: 'primary' },
+                    { label: 'Glute', pct: 80, type: 'primary' },
+                    { label: 'Erector', pct: 50, type: 'synergist' }
+                ],
+                dumbbell_biceps_curl: [
+                    { label: 'Biceps', pct: 92, type: 'primary' },
+                    { label: 'Brachial', pct: 65, type: 'synergist' },
+                    { label: 'Forearm', pct: 35, type: 'synergist' }
+                ],
+                dumbbell_hammer_curl: [
+                    { label: 'Brachial', pct: 85, type: 'primary' },
+                    { label: 'Biceps', pct: 70, type: 'synergist' },
+                    { label: 'Forearm', pct: 55, type: 'synergist' }
+                ],
+                dumbbell_lateral_raise: [
+                    { label: 'Lat Delt', pct: 90, type: 'primary' },
+                    { label: 'Trapez', pct: 35, type: 'synergist' },
+                    { label: 'Core', pct: 15, type: 'synergist' }
+                ],
+                dumbbell_walking_lunge: [
+                    { label: 'Quad', pct: 82, type: 'primary' },
+                    { label: 'Glute', pct: 78, type: 'primary' },
+                    { label: 'Calf', pct: 30, type: 'synergist' }
+                ]
+            };
+
+            const config = emgConfig[currentExerciseKey] || emgConfig.station_chest_press;
+            for (let i = 0; i < 3; i++) {
+                const bar = document.getElementById(`emg-bar-${i}`);
+                const pct = document.getElementById(`emg-pct-${i}`);
+                const label = bar?.parentElement?.previousElementSibling;
+                if (bar && pct) {
+                    const c = config[i];
+                    const val = Math.round(c.pct * phaseIntensity);
+                    bar.style.width = `${val}%`;
+                    bar.className = `emg-bar-fill ${c.type === 'primary' ? 'emg-bar-primary' : 'emg-bar-synergist'}`;
+                    pct.innerText = `${val}%`;
+                    if (label) label.innerText = c.label;
+                }
+            }
+        }
+
+        /* =========================================================================
+           8D. 3D TRAJECTORY RIBBON (KINOVEA-STYLE MOTION PATH)
+           ========================================================================= */
+        function initTrajectoryRibbon() {
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(MAX_TRAJECTORY_PTS * 3);
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setDrawRange(0, 0);
+            const mat = new THREE.LineBasicMaterial({
+                color: 0x38bdf8, transparent: true, opacity: 0.6, linewidth: 2
+            });
+            trajectoryLine = new THREE.Line(geo, mat);
+            trajectoryLine.frustumCulled = false;
+            scene.add(trajectoryLine);
+        }
+
+        function updateTrajectoryRibbon() {
+            if (!trajectoryLine || !athleteRig) return;
+
+            // Track the hand/equipment world position
+            const r = athleteRig;
+            const ex = EXERCISES[currentExerciseKey];
+            let trackTarget = r.leftHand;
+            if (ex && ex.type === 'station') {
+                // For station: track grip position
+                trackTarget = r.leftHand;
+            }
+            if (!trackTarget) return;
+
+            scene.updateMatrixWorld(true);
+            const wp = new THREE.Vector3();
+            trackTarget.getWorldPosition(wp);
+
+            trajectoryPoints.push(wp.clone());
+            if (trajectoryPoints.length > MAX_TRAJECTORY_PTS) {
+                trajectoryPoints.shift();
+            }
+
+            const positions = trajectoryLine.geometry.attributes.position.array;
+            for (let i = 0; i < trajectoryPoints.length; i++) {
+                positions[i * 3] = trajectoryPoints[i].x;
+                positions[i * 3 + 1] = trajectoryPoints[i].y;
+                positions[i * 3 + 2] = trajectoryPoints[i].z;
+            }
+            trajectoryLine.geometry.attributes.position.needsUpdate = true;
+            trajectoryLine.geometry.setDrawRange(0, trajectoryPoints.length);
+
+            // Color based on mode: cyan for correct, rose for mistake
+            trajectoryLine.material.color.setHex(techniqueMode === 'correct' ? 0x38bdf8 : 0xfb7185);
+        }
+
+        function clearTrajectory() {
+            trajectoryPoints = [];
+            if (trajectoryLine) {
+                trajectoryLine.geometry.setDrawRange(0, 0);
+            }
+        }
+
+        /* =========================================================================
+           8E. 3D JOINT ANGLE ARCS (PROTRACTOR OVERLAY)
+           ========================================================================= */
+        function initAngleArcs() {
+            angleArcGroup = new THREE.Group();
+            angleArcGroup.visible = showAngleArcs;
+            scene.add(angleArcGroup);
+        }
+
+        function updateAngleArcs(cycle) {
+            if (!angleArcGroup || !athleteRig) return;
+            // Clear previous arcs
+            while (angleArcGroup.children.length > 0) {
+                const c = angleArcGroup.children[0];
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) c.material.dispose();
+                angleArcGroup.remove(c);
+            }
+
+            scene.updateMatrixWorld(true);
+            const r = athleteRig;
+
+            // Determine which joints to show based on exercise
+            const k = currentExerciseKey;
+            const joints = [];
+
+            // Elbow angle (for arm exercises)
+            if (['dumbbell_biceps_curl', 'dumbbell_hammer_curl', 'station_triceps_pushdown', 'station_chest_press', 'dumbbell_shoulder_press'].includes(k)) {
+                const elbowL = new THREE.Vector3();
+                r.leftForearm.getWorldPosition(elbowL);
+                const elbowAngle = Math.round(90 + cycle * 75);
+                joints.push({ pos: elbowL, angle: elbowAngle, label: `${elbowAngle}°` });
+            }
+
+            // Knee angle (for leg exercises)
+            if (['goblet_squat', 'station_leg_extension', 'dumbbell_walking_lunge'].includes(k)) {
+                const kneeL = new THREE.Vector3();
+                r.leftLowerLeg.getWorldPosition(kneeL);
+                const kneeAngle = Math.round(180 - cycle * 90);
+                joints.push({ pos: kneeL, angle: kneeAngle, label: `${kneeAngle}°` });
+            }
+
+            // Hip angle (for hinge exercises)
+            if (['dumbbell_rdl', 'goblet_squat'].includes(k)) {
+                const hipPos = new THREE.Vector3();
+                r.pelvis.getWorldPosition(hipPos);
+                const hipAngle = Math.round(180 - cycle * 80);
+                joints.push({ pos: hipPos, angle: hipAngle, label: `${hipAngle}°` });
+            }
+
+            joints.forEach(j => {
+                // Create arc geometry
+                const arcRadius = 0.12;
+                const startAngle = 0;
+                const endAngle = (j.angle / 180) * Math.PI;
+                const segments = 24;
+                const curve = new THREE.EllipseCurve(0, 0, arcRadius, arcRadius, startAngle, endAngle, false, 0);
+                const pts = curve.getPoints(segments);
+                const arcGeo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0)));
+
+                // Color: green (optimal), yellow (caution), red (danger)
+                let arcColor = 0x34d399; // green
+                if (j.angle < 60 || j.angle > 170) arcColor = 0xfb7185; // red
+                else if (j.angle < 80 || j.angle > 150) arcColor = 0xfbbf24; // yellow
+
+                const arcMat = new THREE.LineBasicMaterial({ color: arcColor, transparent: true, opacity: 0.85, linewidth: 2 });
+                const arcLine = new THREE.Line(arcGeo, arcMat);
+                arcLine.position.copy(j.pos);
+                arcLine.lookAt(camera.position); // face camera
+                angleArcGroup.add(arcLine);
+
+                // Angle label sprite
+                const labelCanvas = document.createElement('canvas');
+                labelCanvas.width = 96; labelCanvas.height = 48;
+                const ctx = labelCanvas.getContext('2d');
+                ctx.fillStyle = arcColor === 0x34d399 ? 'rgba(52,211,153,0.85)' : arcColor === 0xfbbf24 ? 'rgba(251,191,36,0.85)' : 'rgba(251,113,133,0.85)';
+                ctx.font = 'bold 28px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(j.label, 48, 24);
+                const tex = new THREE.CanvasTexture(labelCanvas);
+                const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+                const sprite = new THREE.Sprite(spriteMat);
+                sprite.scale.set(0.18, 0.09, 1);
+                sprite.position.copy(j.pos);
+                sprite.position.y += 0.16;
+                angleArcGroup.add(sprite);
+            });
+        }
+
+        /* =========================================================================
+           8F. GYM AUDIO EFFECTS
+           ========================================================================= */
+        function playGymAudio(type) {
+            if (!gymAudioEnabled || !audioEnabled) return;
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const now = ctx.currentTime;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'cable') {
+                    // Cable glide hum — low frequency whoosh
+                    osc.frequency.value = 120;
+                    osc.type = 'sawtooth';
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.04, now + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'plate') {
+                    // Plate contact clank — sharp metallic
+                    osc.frequency.value = 2200;
+                    osc.type = 'triangle';
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.005);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'breath') {
+                    // Exertion breath — white noise burst
+                    const bufferSize = ctx.sampleRate * 0.15;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.03;
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const noiseGain = ctx.createGain();
+                    noise.connect(noiseGain);
+                    noiseGain.connect(ctx.destination);
+                    noiseGain.gain.setValueAtTime(0.0001, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.06, now + 0.02);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+                    noise.start(now);
+                    return; // noise source, not oscillator
+                }
+            } catch (e) {/* silent */}
+        }
+
+        /* =========================================================================
+           8G. TOGGLE FUNCTIONS FOR BIO OVERLAYS
+           ========================================================================= */
+        function toggleTrajectory() {
+            showTrajectory = !showTrajectory;
+            const btn = document.getElementById('bio-btn-traj');
+            if (btn) btn.className = showTrajectory ? 'bio-toggle-btn active' : 'bio-toggle-btn';
+            if (!showTrajectory) clearTrajectory();
+            if (trajectoryLine) trajectoryLine.visible = showTrajectory;
+        }
+
+        function toggleAngleArcs() {
+            showAngleArcs = !showAngleArcs;
+            const btn = document.getElementById('bio-btn-arcs');
+            if (btn) btn.className = showAngleArcs ? 'bio-toggle-btn active' : 'bio-toggle-btn';
+            if (angleArcGroup) angleArcGroup.visible = showAngleArcs;
         }
 
         /* =========================================================================
@@ -3030,6 +3768,7 @@
             lastMotionProgress = 0;
             restActive = false;
             updateRepCounterUI();
+            clearTrajectory();
             const restEl = document.getElementById('rest-timer-value');
             if (restEl) restEl.innerText = '00:00';
             const restPill = document.getElementById('rest-timer-pill');
@@ -3176,7 +3915,7 @@
             breathPhase += delta * 1.8;
 
             if (isPlaying) {
-                motionProgress += (delta / 3.3) * motionSpeed;
+                motionProgress += (delta / 4.0) * motionSpeed; // 4s cycle to match 3-1-1-1 tempo
                 if (motionProgress >= 1.0) {
                     // Cycle complete -> rep counted
                     repCount++;
@@ -3185,7 +3924,17 @@
                     motionProgress = 0.0;
                     lastMotionProgress = 0;
                     playMetronomeTick('rep');
+                    playGymAudio('plate'); // plate contact clank at cycle bottom
+                    clearTrajectory(); // clear path for next rep
                 }
+                // Gym audio triggers during motion phases
+                if (motionProgress > 0.63 && motionProgress < 0.65 && lastMotionProgress <= 0.63) {
+                    playGymAudio('breath'); // exertion breath at concentric start
+                }
+                if (motionProgress > 0.01 && motionProgress < 0.03) {
+                    playGymAudio('cable'); // cable glide at start of rep
+                }
+                lastMotionProgress = motionProgress;
                 document.getElementById('motion-scrubber').value = motionProgress;
             }
 

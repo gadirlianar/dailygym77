@@ -4,3 +4,4 @@ dist/
 .vercel/
 package-lock.json
 index_before_redesign.html
+index_backup*.html

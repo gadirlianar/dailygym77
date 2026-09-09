@@ -1,40 +1,65 @@
 # APEX BIO 3D (dailygym77)
 
-Çoxfunksiyalı Ev Məşq Stansiyası və Sərbəst Çəkilər üçün Hiper-Realist 3D Biomexaniki Analiz Sistemi & 4-Günlük Fərdi Proqram.
+İnteraktiv 3D Məşq & Biomexanika Təlimatçısı, 4-Günlük Fərdi Məşq Proqramı və Tərəqqi İzləmə Sistemi.
 
-## 🚀 Yeni və Əsas Xüsusiyyətlər
+---
 
-### 1. Hiper-Realist İnsan Anatomiyası və Əzələ Relyefi
-- **Anatomik Relyef:** Körpücük sümükləri (clavicles), sternum sümük cizgisi, ayrılmış yuxarı (klavikulyar) və aşağı (sternal) döş lifləri.
-- **3-Başlı Deltoid:** Ön, orta və arxa deltoid başlarının dəqiq anatomik ayrılması.
-- **Qollar və Ön Qol:** İkibaşlı bicep, braxialis, braxioradialis relyefi və bilək damar cizgiləri.
-- **Ayaq Anatomiyası:** Kvadrisepsin göz yaşı forması (VMO - Vastus Medialis Obliquus), mərkəzi Rectus Femoris, xarici Vastus Lateralis, ikibaşlı qastroknemius baldır və Axill vətəri.
-- **Dinamik Əzələ Qabarması (Muscle Bulging):** Yığılma zamanı əzələlərin radial qalınlaşması və gərilmə zamanı uzanması.
+## 🚀 Əsas Funksiyalar və Memarlıq
 
-### 2. Orijinal Atletik Rep Tempi (3-1-1-1) & Kinetik Zəncir
-- **3-1-1-1 Rep Tempi:**
-  - **Eksentrik Faza (3 saniyə):** Nəzarətli, aramla endirmə.
-  - **Gərilmə Keçidi (0.8 saniyə):** İnersiyasız mikropauza.
-  - **Konsentrik Sürücü (1.2 saniyə):** Sticking point ilə partlayıcı güc.
-  - **Zirvə Sıxılma (1 saniyə):** Mind-muscle izometrik sıxılma.
-- **Skapulohumeral Ritm:** Çəkmə və itələmə hərəkətlərində kürək sümüklərinin (scapulae) avtonom retraksiya və protraksiyası.
-- **Kompensator Baş & Boyun Uyğunlaşması:** Squat və RDL hərəkətlərində onurğanı qoruyan neytral servikal hizalanma və səhv rejimində boyun gərginliyi vizualizasiyası.
+### 1. Çox-Səhifəli Tətbiq Quruluşu (5 Görünüş)
+- 🏠 **Ana Səhifə (`#view-landing`):** İnteraktiv hero təqdimatı, 4 split xülasəsi, əsas xüsusiyyət kartları və 1-kliklə sürətli məşqə başlama.
+- 📋 **4-Günlük Proqram (`#view-programs`):** Bütün 4 günün (İtələmə, Çəkmə, Ayaq, Üst Bədən Həcmi) hərəkət siyahısı, hədəf əzələləri və müddəti.
+- ⚡ **3D Məşq Zalı (`#view-workout`):** 360° interaktiv WebGL səhnəsi, canlı insan anatomiyası, 3-1-1-1 atletik rep tempi, təkrar sayğacı və set qeydiyyatı.
+- 📊 **Tərəqqi & Gündəlik (`#view-progress`):** 4 açar statistika kartı, 7-günlük dinamik həcm sütun qrafiki, sessiya tarixçəsi, əllə məşq əlavə etmə və `kg`/`lb` vahid dəstəyi.
+- ⚙️ **Parametrlər (`#view-settings`):** Çəki vahidi (kq / lb), 3D qrafika keyfiyyəti (Ultra / Eko) və audio tənzimləmələri.
 
-### 3. Laboratoriya Səviyyəli 3D Analiz Alətləri
-- **3D Oynaq Bucağı Arxları (Protractor Overlay):** Dirsək, diz və çanaq oynaqlarında real dərəcə qövsləri və rəngli təhlükəsizlik zonaları.
-- **Kinovea Tipli 3D Trayektoriya Lenti (Motion Path Ribbon):** Hərəkət oxunun fəzada cızdığı xətt (Düzgün formada yaşıl/mavi, səhvdə əyilən qırmızı).
-- **Canlı % EMG Bio-Telemetriya:** Hədəf və köməkçi əzələlərin aktivasiya dərəcəsini göstərən dinamik qrafik.
-- **Dinamik Çəki Bloku:** Seçilmiş sancaqdan yuxarı olan plitələrin bələdçi relslərdə qalxması və kabel fiziki gərginliyi.
+### 2. Hibrid İstifadəçi Təcrübəsi (Default vs Pro Mode)
+- **Default Sadə Rejim (İlkin):** Təmiz, gözoxşayan və motivasiyaedici interfeys. Mürəkkəb mühəndislik qrafikləri gizlədilir, diqqət hərəkətin düzgün icrasına və "3 Qızıl Qayda"ya yönəldilir.
+- **Pro / Coach Mode (`🔬 Pro Analitika`):** Bir toxunuşla Kinovea tipli 3D trayektoriya lenti, real vaxt dərəcə qövsləri (Protractor) və % EMG əzələ aktivasiya qrafikləri aktivləşir.
 
-### 4. Real İdman Zalı Audio Mühiti
-- Web Audio API vasitəsilə kabel sürüşmə fışıltısı, metal plitələrin toqquşma cingiltisi və partlayıcı nəfəsvermə səsləri.
+### 3. İsti Məşqçi Tonu & "3 Qızıl Qayda"
+- 13 hərəkətin hamısı üçün qayğıkeş, aydın və motivasiyaedici məşqçi dili.
+- Alarmlı zədə xəbərdarlıqları əvəzinə konstruktiv **"💡 Məşqçi Məsləhəti: Diqqət Yetir"** kartı və dostyana 3D oynaq bələdçisi.
 
-### 5. 4-Günlük Balanslaşdırılmış Proqram
-- **GÜN 1: İtələmə (Push)** — Chest Press, Pec Deck Fly, Overhead Press, Triceps Pushdown
-- **GÜN 2: Çəkmə (Pull)** — Lat Pulldown, Seated Cable Row, Biceps Curl, Hammer Curl
-- **GÜN 3: Ayaq & Baza (Legs)** — Goblet Squat, Leg Extension, Romanian Deadlift (RDL), Walking Lunge
-- **GÜN 4: Üst Bədən İxtisaslaşması (Upper Volume)** — Chest Press, Lateral Raise, Lat Pulldown, Hammer Curl
+### 4. Real Vaxt Məşq Zamanı Set Qeydiyyatı (Workout Logger)
+- Hərəkət zamanı çəki və təkrar stepperi (`−` / `+`).
+- Seti qeyd etmə, avtomatik fasilə taymerinin işə düşməsi və tamamlanmış məşqin ümumi tonnajının hesablanaraq `localStorage`-a yazılması.
 
-### 6. Məşq İdarəetməsi
-- Təkrar sayğacı (Rep Counter), avtomatik istirahət taymeri (Rest Timer) və metronom.
-- Tam mobil, planşet və masaüstü responsivliyi.
+### 5. Mobil-First Responsivlik & 60 FPS Performans
+- **Off-Canvas HUD:** Mobil ekranlarda (`<= 768px`) 3D model maneəsiz qalır; üzən `📋 Hərəkətlər & Setlər` düyməsi ilə idarəetmə çəkməcəsi açılır və bağlanır.
+- **Toxunma Jestləri:** `touch-action: none;` sayəsində mobil telefonlarda 1 barmaqla 360° fırlanma və 2 barmaqla böyütmə sıçrayışsız işləyir.
+- **Canlı FPS & Ultra/Eko Keçidi:** Real vaxt kadr tezliyi sayğacı və 1-kliklə kölgəsiz Eko / batareya qənaəti rejiminə keçid.
+
+---
+
+## 🏋️ 4-Günlük Balanslaşdırılmış Proqram (13 Hərəkət)
+
+1. **GÜN 1: İtələmə (Push)**
+   - Stansiyada Chest Press
+   - Stansiyada Pec Deck Fly (Kəpənək)
+   - Dumbbell Shoulder Press
+   - Stansiyada Triceps Pushdown
+2. **GÜN 2: Çəkmə (Pull)**
+   - Stansiyada Lat Pulldown
+   - Stansiyada Seated Cable Row
+   - Dumbbell Biceps Curl
+   - Dumbbell Hammer Curl
+3. **GÜN 3: Ayaq & Baza (Legs)**
+   - Dumbbell Goblet Squat
+   - Stansiyada Leg Extension
+   - Dumbbell Romanian Deadlift (RDL)
+   - Dumbbell Walking Lunge
+4. **GÜN 4: Üst Bədən İxtisaslaşması (Upper Volume)**
+   - Stansiyada Chest Press
+   - Dumbbell Lateral Raise
+   - Stansiyada Lat Pulldown
+   - Dumbbell Hammer Curl
+
+---
+
+## 🛠 Texnoloji Stack
+- **Frontend:** Pure Static Vanilla HTML5, CSS3, JavaScript (ES6+).
+- **3D Mühərrik:** Three.js r128 (OrbitControls, PBR Materiallar, Deformasiya Kinematikası).
+- **Audio:** Web Audio API (İdman zalı mühiti, metronom və kontakt səsləri).
+- **Deployment:** Vercel (Zero-build deployment, sıfır npm asılılığı).
+

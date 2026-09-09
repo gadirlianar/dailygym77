@@ -31,12 +31,12 @@
             --font-heading: 'Space Grotesk', 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
 
-            /* Dark Surface Palette (Master Brief: #0E0F12 base) */
-            --bg-base: #0e0f12;
-            --bg-surface: #13161c;
-            --bg-card: #181d26;
-            --bg-elevated: #222938;
-            --bg-overlay: rgba(14, 15, 18, 0.88);
+            /* Dark Surface Palette (Master Brief: #0E0F12 base — deepened for premium feel) */
+            --bg-base: #08090c;
+            --bg-surface: #0e1118;
+            --bg-card: #131822;
+            --bg-elevated: #1c2333;
+            --bg-overlay: rgba(8, 9, 12, 0.92);
 
             /* High-Contrast Borders */
             --border-subtle: rgba(255, 255, 255, 0.08);
@@ -78,6 +78,22 @@
             --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* Animated glow keyframes for premium interactivity */
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes floatGlow {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { border-color: rgba(56, 189, 248, 0.15); }
+            50% { border-color: rgba(56, 189, 248, 0.45); }
+        }
+
         body {
             font-family: var(--font-sans);
             background-color: var(--bg-base);
@@ -90,6 +106,7 @@
             width: 100vw;
             display: flex;
             flex-direction: column;
+            background-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56, 189, 248, 0.04) 0%, transparent 60%);
         }
 
         /* Reusable Headings with Space Grotesk */
@@ -915,16 +932,16 @@
            ========================================================================= */
         /* ---- Top Main Navbar ---- */
         header#main-navbar {
-            height: 62px;
+            height: 64px;
             flex-shrink: 0;
-            background: rgba(17, 24, 39, 0.88);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(10, 14, 22, 0.82);
+            backdrop-filter: blur(20px) saturate(1.5);
+            -webkit-backdrop-filter: blur(20px) saturate(1.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 24px;
             z-index: 50;
             position: relative;
         }
@@ -1063,14 +1080,15 @@
 
         .hero-glow-sphere {
             position: absolute;
-            top: -30px;
-            width: 320px;
-            height: 320px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(182, 255, 60, 0.08) 50%, transparent 70%);
+            top: -60px;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(182, 255, 60, 0.1) 40%, transparent 65%);
             border-radius: 50%;
-            filter: blur(50px);
+            filter: blur(60px);
             pointer-events: none;
             z-index: 0;
+            animation: floatGlow 6s ease-in-out infinite;
         }
 
         .hero-tag {
@@ -1176,24 +1194,40 @@
         }
 
         .metric-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px 16px;
+            background: linear-gradient(145deg, rgba(19, 24, 34, 0.9), rgba(8, 12, 20, 0.95));
+            border: 1px solid rgba(56, 189, 248, 0.12);
+            border-radius: 18px;
+            padding: 24px 18px;
             text-align: center;
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .metric-box::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.06) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         .metric-box:hover {
-            transform: translateY(-2px);
-            border-color: rgba(56, 189, 248, 0.35);
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 12px 40px rgba(56, 189, 248, 0.15), var(--glow-cyan);
         }
 
         .metric-box-val {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 800;
-            color: var(--accent-cyan);
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-lime));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
         }
 
@@ -1201,7 +1235,7 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--text-muted);
-            margin-top: 4px;
+            margin-top: 6px;
         }
 
         /* Features Section */
@@ -1230,31 +1264,51 @@
         }
 
         .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 26px;
-            transition: transform 0.2s, border-color 0.2s;
+            background: linear-gradient(145deg, rgba(19, 24, 34, 0.85), rgba(8, 12, 20, 0.9));
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            border-radius: 20px;
+            padding: 28px;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+
         .feature-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(56, 189, 248, 0.35);
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 24px rgba(56, 189, 248, 0.08);
+        }
+
+        .feature-card:hover::after {
+            opacity: 1;
         }
 
         .feature-icon-badge {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: rgba(56, 189, 248, 0.12);
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(182, 255, 60, 0.08));
             border: 1px solid rgba(56, 189, 248, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-bottom: 16px;
+            font-size: 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.1);
         }
 
         .feature-title {
@@ -1267,7 +1321,7 @@
         .feature-desc {
             font-size: 13px;
             color: var(--text-secondary);
-            line-height: 1.6;
+            line-height: 1.65;
         }
 
         /* Program Preview Grid on Landing */
@@ -1279,21 +1333,39 @@
         }
 
         .program-preview-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 24px;
+            background: linear-gradient(155deg, rgba(19, 24, 34, 0.85), rgba(8, 12, 20, 0.92));
+            border: 1px solid rgba(56, 189, 248, 0.08);
+            border-radius: 20px;
+            padding: 26px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .program-preview-card::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-lime));
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .program-preview-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent-cyan);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 24px rgba(56, 189, 248, 0.06);
+        }
+
+        .program-preview-card:hover::before {
+            opacity: 1;
         }
 
         .preview-day-tag {
@@ -1313,7 +1385,7 @@
         .preview-day-muscles {
             font-size: 12px;
             color: var(--text-secondary);
-            line-height: 1.4;
+            line-height: 1.5;
             margin-bottom: 18px;
         }
 
@@ -1321,7 +1393,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-top: 1px solid var(--border-subtle);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
             padding-top: 14px;
             font-size: 12px;
             color: var(--accent-emerald);
@@ -1385,19 +1457,38 @@
         }
 
         .full-program-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 28px;
+            background: linear-gradient(155deg, rgba(19, 24, 34, 0.88), rgba(8, 12, 20, 0.95));
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            border-radius: 22px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: all 0.25s ease;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .full-program-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-lime));
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .full-program-card:hover {
             border-color: rgba(56, 189, 248, 0.4);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 32px rgba(56, 189, 248, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .full-program-card:hover::before {
+            opacity: 1;
         }
 
         .program-card-header {
@@ -1481,25 +1572,28 @@
 
         .btn-start-program-day {
             width: 100%;
-            background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+            background: linear-gradient(135deg, var(--accent-lime), #65a30d);
             color: #0a0e18;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 800;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 13px;
+            border-radius: 13px;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            box-shadow: 0 4px 18px rgba(182, 255, 60, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-start-program-day:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 28px rgba(182, 255, 60, 0.4);
         }
 
         /* ---- VIEW 3: WORKOUT STAGE RETURN BAR ---- */
@@ -1549,19 +1643,30 @@
         }
 
         .progress-stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
+            background: linear-gradient(155deg, rgba(19, 24, 34, 0.88), rgba(8, 12, 20, 0.95));
+            border: 1px solid rgba(52, 211, 153, 0.12);
+            border-radius: 18px;
+            padding: 22px;
             text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(52, 211, 153, 0.4);
+            box-shadow: 0 12px 36px rgba(52, 211, 153, 0.1);
         }
 
         .progress-stat-val {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
-            color: var(--accent-emerald);
-            margin-top: 6px;
+            background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 8px;
         }
 
         .progress-stat-lbl {
@@ -1611,13 +1716,15 @@
             width: 100%;
             max-width: 44px;
             border-radius: 8px 8px 0 0;
-            background: linear-gradient(180deg, var(--accent-cyan), #1d4ed8);
-            transition: height 0.5s ease;
+            background: linear-gradient(180deg, var(--accent-cyan), #1e40af);
+            transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
+            box-shadow: 0 -4px 12px rgba(56, 189, 248, 0.15);
         }
 
         .chart-bar-pillar.active {
             background: linear-gradient(180deg, var(--accent-lime), #4d7c0f);
+            box-shadow: 0 -4px 16px rgba(182, 255, 60, 0.2);
         }
 
         .chart-bar-val {
@@ -2265,6 +2372,7 @@
                 <!-- Hero Section -->
                 <div class="hero-banner">
                     <div class="hero-glow-sphere"></div>
+                    <div class="hero-glow-sphere" style="left: 60%; top: -20px; width: 380px; height: 380px; background: radial-gradient(circle, rgba(182, 255, 60, 0.14) 0%, rgba(52, 211, 153, 0.06) 45%, transparent 65%); animation-delay: -3s;"></div>
                     <div class="hero-tag">✦ İNTERAKTİV 3D MƏŞQ BƏLƏDÇİSİ</div>
                     <h1 class="hero-headline">
                         Şəxsi Məşqçin Hər An Yanında:<br>
@@ -3586,22 +3694,30 @@
         const MUSCLE_BASE_EMISSIVE = 0x1f0e06;
         const MUSCLE_BASE_INTENSITY = 0.06;
 
+        // Safe viewport dimensions helper (prevents 0x0 / NaN when viewport is hidden)
+        function getViewportSize() {
+            const w = viewport.clientWidth || window.innerWidth;
+            const h = viewport.clientHeight || (window.innerHeight - 62);
+            return { w: Math.max(w, 320), h: Math.max(h, 240) };
+        }
+
         function initScene() {
             try {
+                const vp = getViewportSize();
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x0e0f12);
-                scene.fog = new THREE.FogExp2(0x0e0f12, 0.035);
+                scene.background = new THREE.Color(0x0a0c10);
+                scene.fog = new THREE.FogExp2(0x0a0c10, 0.028);
 
-                camera = new THREE.PerspectiveCamera(38, viewport.clientWidth / viewport.clientHeight, 0.1, 50);
+                camera = new THREE.PerspectiveCamera(38, vp.w / vp.h, 0.1, 50);
                 camera.position.set(2.6, 1.5, 3.0);
 
                 renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-                renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+                renderer.setSize(vp.w, vp.h);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 renderer.shadowMap.enabled = true;
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                renderer.toneMappingExposure = 1.25;
+                renderer.toneMappingExposure = 1.3;
                 if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
                 viewport.appendChild(renderer.domElement);
 
@@ -3613,15 +3729,17 @@
                 controls.minDistance = 1.2;
                 controls.maxDistance = 8.0;
 
-                // Studio Lighting
-                const hemi = new THREE.HemisphereLight(0x8ecef7, 0x0e0f12, 0.65);
+                // ─── Cinematic Gym Studio Lighting ───
+                // Hemisphere: cool sky + warm floor bounce
+                const hemi = new THREE.HemisphereLight(0x7ec8e3, 0x1a0f06, 0.55);
                 scene.add(hemi);
 
-                const keyLight = new THREE.DirectionalLight(0xfff6ea, 1.5);
-                keyLight.position.set(3, 5.5, 4);
+                // Key Light: warm studio overhead
+                const keyLight = new THREE.DirectionalLight(0xfff0d6, 1.6);
+                keyLight.position.set(3, 6, 4);
                 keyLight.castShadow = true;
                 keyLight.shadow.mapSize.set(2048, 2048);
-                keyLight.shadow.bias = -0.0004;
+                keyLight.shadow.bias = -0.0003;
                 keyLight.shadow.camera.near = 0.5;
                 keyLight.shadow.camera.far = 15;
                 keyLight.shadow.camera.left = -4;
@@ -3630,34 +3748,58 @@
                 keyLight.shadow.camera.bottom = -4;
                 scene.add(keyLight);
 
-                const fillLight = new THREE.DirectionalLight(0x94a3b8, 0.45);
-                fillLight.position.set(-4, 3, 2);
+                // Fill Light: soft cool diffuse
+                const fillLight = new THREE.DirectionalLight(0x8ba4c7, 0.5);
+                fillLight.position.set(-4, 3.5, 2);
                 scene.add(fillLight);
 
-                const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
-                rimLight.position.set(0, 4, -5);
-                scene.add(rimLight);
+                // Cyan Rim Light: creates sharp silhouette edge (signature APEX look)
+                const rimCyan = new THREE.DirectionalLight(0x38bdf8, 1.8);
+                rimCyan.position.set(-1.5, 4, -5);
+                scene.add(rimCyan);
 
-                const underLight = new THREE.PointLight(0x38bdf8, 0.45, 6);
-                underLight.position.set(0, 0.1, 1.5);
+                // Lime Accent Light: highlights active muscle groups and motion axis
+                const rimLime = new THREE.DirectionalLight(0xb6ff3c, 0.7);
+                rimLime.position.set(3, 2, -3);
+                scene.add(rimLime);
+
+                // Upward cyan wash from floor (dramatic underglow)
+                const underLight = new THREE.PointLight(0x38bdf8, 0.55, 7);
+                underLight.position.set(0, 0.08, 1.5);
                 scene.add(underLight);
 
-                // Ground Platform
-                const plinthGeo = new THREE.CylinderGeometry(2.5, 2.6, 0.08, 64);
-                const plinthMat = new THREE.MeshStandardMaterial({ color: 0x0d1220, roughness: 0.75, metalness: 0.12 });
+                // Soft warm top spot for head/shoulder definition
+                const topSpot = new THREE.PointLight(0xffecd2, 0.4, 8);
+                topSpot.position.set(0, 5.5, 0);
+                scene.add(topSpot);
+
+                // ─── Dark Gym Floor Platform ───
+                const plinthGeo = new THREE.CylinderGeometry(3.0, 3.1, 0.06, 96);
+                const plinthMat = new THREE.MeshStandardMaterial({
+                    color: 0x080c14,
+                    roughness: 0.55,
+                    metalness: 0.25,
+                    envMapIntensity: 0.3
+                });
                 const plinth = new THREE.Mesh(plinthGeo, plinthMat);
-                plinth.position.y = -0.04;
+                plinth.position.y = -0.03;
                 plinth.receiveShadow = true;
                 scene.add(plinth);
 
-                // Subtle accent rings
-                [1.2, 1.8, 2.4].forEach(r => {
+                // Neon ring grid on floor — signature athletic look
+                const ringColors = [0x38bdf8, 0x22d3ee, 0xb6ff3c];
+                [0.8, 1.4, 2.0, 2.6].forEach((r, i) => {
                     const ring = new THREE.Mesh(
-                        new THREE.RingGeometry(r, r + 0.012, 64),
-                        new THREE.MeshBasicMaterial({ color: 0x38bdf8, opacity: 0.15, transparent: true, side: THREE.DoubleSide })
+                        new THREE.RingGeometry(r, r + 0.008, 96),
+                        new THREE.MeshBasicMaterial({
+                            color: ringColors[i % ringColors.length],
+                            opacity: 0.12 - i * 0.02,
+                            transparent: true,
+                            side: THREE.DoubleSide
+                        })
                     );
                     ring.rotation.x = -Math.PI / 2;
-                    ring.position.y = 0.002;
+                    ring.position.y = 0.001;
                     scene.add(ring);
                 });
 
@@ -3677,6 +3819,17 @@
                 initAngleArcs();
 
                 window.addEventListener('resize', onWindowResize);
+
+                // ResizeObserver for live canvas sync when view becomes visible
+                if (typeof ResizeObserver !== 'undefined') {
+                    const ro = new ResizeObserver(() => {
+                        if (viewport.clientWidth > 0 && viewport.clientHeight > 0) {
+                            onWindowResize();
+                        }
+                    });
+                    ro.observe(viewport);
+                }
+
                 initUI();
                 animate();
             } catch (err) {
@@ -7078,9 +7231,10 @@
         }
 
         function onWindowResize() {
-            camera.aspect = viewport.clientWidth / viewport.clientHeight;
+            const vp = getViewportSize();
+            camera.aspect = vp.w / vp.h;
             camera.updateProjectionMatrix();
-            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+            renderer.setSize(vp.w, vp.h);
         }
 
         /* =========================================================================
